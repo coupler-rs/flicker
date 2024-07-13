@@ -20,15 +20,15 @@ impl Renderer {
         }
     }
 
-    pub fn context<'a>(
+    pub fn canvas<'a>(
         &'a mut self,
         data: &'a mut [u32],
         width: usize,
         height: usize,
-    ) -> RenderContext<'a> {
+    ) -> Canvas<'a> {
         assert!(data.len() == width * height);
 
-        RenderContext {
+        Canvas {
             renderer: self,
             data,
             width,
@@ -37,14 +37,14 @@ impl Renderer {
     }
 }
 
-pub struct RenderContext<'a> {
+pub struct Canvas<'a> {
     renderer: &'a mut Renderer,
     data: &'a mut [u32],
     width: usize,
     height: usize,
 }
 
-impl<'a> RenderContext<'a> {
+impl<'a> Canvas<'a> {
     pub fn width(&self) -> usize {
         self.width
     }
