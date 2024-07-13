@@ -15,6 +15,7 @@ mod neon;
 use std::fmt::Debug;
 use std::ops::*;
 
+#[allow(unused)]
 pub use scalar::Scalar;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
