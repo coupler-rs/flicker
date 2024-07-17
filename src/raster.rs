@@ -285,7 +285,7 @@ impl Rasterizer {
             let height = Flip::winding(1.0 - y_offset);
             let area = 0.5 * height * (2.0 - x_offset - x_offset_next);
 
-            let mut row_end = x as usize + 1;
+            let mut row_end = x as usize;
             self.coverage[row * self.width + x as usize] += area;
             if x as usize + 1 < self.width {
                 self.coverage[row * self.width + x as usize + 1] += height - area;
@@ -321,7 +321,7 @@ impl Rasterizer {
         let height = Flip::winding(y_offset_end - y_offset);
         let area = 0.5 * height * (2.0 - x_offset - x_offset_end);
 
-        let mut row_end = x as usize + 1;
+        let mut row_end = x as usize;
         self.coverage[row * self.width + x as usize] += area;
         if x as usize + 1 < self.width {
             self.coverage[row * self.width + x as usize + 1] += height - area;
@@ -335,17 +335,20 @@ impl Rasterizer {
         let offset = y * self.bitmasks_width;
 
         let cell_min = start >> PIXELS_PER_BIT_SHIFT;
-        let cell_max = (end + PIXELS_PER_BIT - 1) >> PIXELS_PER_BIT_SHIFT;
+        let cell_max = end >> PIXELS_PER_BIT_SHIFT;
         let bitmask_index_min = cell_min >> BITS_PER_BITMASK_SHIFT;
         let bitmask_index_max = cell_max >> BITS_PER_BITMASK_SHIFT;
 
-        let mut bit_min = cell_min & (BITS_PER_BITMASK - 1);
+        let bit_min = cell_min & (BITS_PER_BITMASK - 1);
+        let mut mask = !0 << bit_min;
         for bitmask_index in bitmask_index_min..bitmask_index_max {
-            self.bitmasks[offset + bitmask_index] |= !0 << bit_min;
-            bit_min = 0;
+            self.bitmasks[offset + bitmask_index] |= mask;
+            mask = !0;
         }
+
         let bit_max = cell_max & (BITS_PER_BITMASK - 1);
-        self.bitmasks[offset + bitmask_index_max] |= (!0 << bit_min) & !(!0 << bit_max);
+        mask &= !0 >> (BITS_PER_BITMASK - 1 - bit_max);
+        self.bitmasks[offset + bitmask_index_max] |= mask;
     }
 
     pub fn finish(&mut self, color: Color, data: &mut [u32], stride: usize) {
