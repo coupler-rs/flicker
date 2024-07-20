@@ -3,7 +3,7 @@ use crate::flatten::{flatten, stroke};
 use crate::geom::{Transform, Vec2};
 use crate::path::Path;
 use crate::raster::{Rasterizer, Segment};
-use crate::text::{Font, Glyph};
+use crate::text::{Font, Glyph, TextLayout};
 
 const MAX_SEGMENTS: usize = 256;
 
@@ -228,27 +228,7 @@ impl<'a> Canvas<'a> {
         transform: &Transform,
         color: Color,
     ) {
-        use rustybuzz::UnicodeBuffer;
-        use std::iter::zip;
-
-        let mut buf = UnicodeBuffer::new();
-        buf.push_str(text);
-        let glyph_buf = rustybuzz::shape(&font.face, &[], buf);
-
-        let scale = size / font.face.units_per_em() as f32;
-
-        let mut offset = 0.0;
-        let mut glyphs = Vec::with_capacity(glyph_buf.len());
-        for (info, glyph_pos) in zip(glyph_buf.glyph_infos(), glyph_buf.glyph_positions()) {
-            glyphs.push(Glyph {
-                id: info.glyph_id as u16,
-                x: offset + scale * glyph_pos.x_offset as f32,
-                y: scale * glyph_pos.y_offset as f32,
-            });
-
-            offset += scale * glyph_pos.x_advance as f32;
-        }
-
-        self.fill_glyphs(&glyphs, font, size, transform, color);
+        let layout = TextLayout::new(text, font, size);
+        self.fill_glyphs(layout.glyphs(), font, size, transform, color);
     }
 }
