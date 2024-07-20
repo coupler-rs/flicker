@@ -27,6 +27,10 @@ pub struct TextLayout {
 }
 
 impl TextLayout {
+    pub fn empty() -> TextLayout {
+        TextLayout { glyphs: Vec::new() }
+    }
+
     pub fn new(text: &str, font: &Font, size: f32) -> TextLayout {
         let mut buf = UnicodeBuffer::new();
         buf.push_str(text);
