@@ -3,7 +3,7 @@ use crate::flatten::{flatten, stroke};
 use crate::geom::{Transform, Vec2};
 use crate::path::Path;
 use crate::raster::{Rasterizer, Segment};
-use crate::text::Font;
+use crate::text::{Font, Glyph};
 
 const MAX_SEGMENTS: usize = 256;
 
@@ -159,17 +159,15 @@ impl<'a> Canvas<'a> {
         self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);
     }
 
-    pub fn fill_text(
+    pub fn fill_glyphs(
         &mut self,
-        text: &str,
+        glyphs: &[Glyph],
         font: &Font,
         size: f32,
         transform: &Transform,
         color: Color,
     ) {
         use rustybuzz::ttf_parser::{GlyphId, OutlineBuilder};
-        use rustybuzz::UnicodeBuffer;
-        use std::iter::zip;
 
         struct Builder {
             path: Path,
@@ -205,31 +203,52 @@ impl<'a> Canvas<'a> {
             }
         }
 
-        let mut buf = UnicodeBuffer::new();
-        buf.push_str(text);
-
         let scale = size / font.face.units_per_em() as f32;
 
-        let glyphs = rustybuzz::shape(&font.face, &[], buf);
-
-        let mut offset = 0.0;
-        for (info, glyph_pos) in zip(glyphs.glyph_infos(), glyphs.glyph_positions()) {
+        for glyph in glyphs {
             let mut builder = Builder {
                 path: Path::new(),
                 ascent: font.face.ascender() as f32,
             };
-            let glyph_id = GlyphId(info.glyph_id as u16);
-            font.face.outline_glyph(glyph_id, &mut builder);
+            font.face.outline_glyph(GlyphId(glyph.id), &mut builder);
 
-            let transform = Transform::translate(
-                offset + glyph_pos.x_offset as f32,
-                glyph_pos.y_offset as f32,
-            )
-            .then(Transform::scale(scale))
-            .then(*transform);
+            let transform = Transform::scale(scale)
+                .then(Transform::translate(glyph.x, glyph.y))
+                .then(*transform);
+
             self.fill_path(&builder.path, &transform, color);
-
-            offset += glyph_pos.x_advance as f32;
         }
+    }
+
+    pub fn fill_text(
+        &mut self,
+        text: &str,
+        font: &Font,
+        size: f32,
+        transform: &Transform,
+        color: Color,
+    ) {
+        use rustybuzz::UnicodeBuffer;
+        use std::iter::zip;
+
+        let mut buf = UnicodeBuffer::new();
+        buf.push_str(text);
+        let glyph_buf = rustybuzz::shape(&font.face, &[], buf);
+
+        let scale = size / font.face.units_per_em() as f32;
+
+        let mut offset = 0.0;
+        let mut glyphs = Vec::with_capacity(glyph_buf.len());
+        for (info, glyph_pos) in zip(glyph_buf.glyph_infos(), glyph_buf.glyph_positions()) {
+            glyphs.push(Glyph {
+                id: info.glyph_id as u16,
+                x: offset + scale * glyph_pos.x_offset as f32,
+                y: scale * glyph_pos.y_offset as f32,
+            });
+
+            offset += scale * glyph_pos.x_advance as f32;
+        }
+
+        self.fill_glyphs(&glyphs, font, size, transform, color);
     }
 }

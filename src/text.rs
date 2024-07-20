@@ -11,3 +11,10 @@ impl Font {
         Some(Self { face })
     }
 }
+
+#[derive(Copy, Clone)]
+pub struct Glyph {
+    pub id: u16,
+    pub x: f32,
+    pub y: f32,
+}
