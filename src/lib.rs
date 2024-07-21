@@ -6,7 +6,6 @@ mod raster;
 mod renderer;
 mod simd;
 mod text;
-mod thread_pool;
 
 pub use color::*;
 pub use geom::*;
