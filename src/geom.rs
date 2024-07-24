@@ -1,6 +1,6 @@
 use std::ops;
 
-/// A 2-dimensional vector.
+/// A 2-dimensional point.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Point {
     pub x: f32,
@@ -8,20 +8,20 @@ pub struct Point {
 }
 
 impl Point {
-    /// Constructs a 2-dimensional vector.
+    /// Constructs a 2-dimensional point.
     #[inline]
     pub fn new(x: f32, y: f32) -> Point {
         Point { x: x, y: y }
     }
 
-    /// Computes the dot product between two vectors.
+    /// Computes the dot product between two points (treated as vectors).
     #[inline]
     pub fn dot(self, other: Point) -> f32 {
         self.x * other.x + self.y * other.y
     }
 
-    /// Considering the two given vectors as 3-dimensional vectors lying in the
-    /// XY-plane, finds the z-coordinate of their cross product.
+    /// Considering the two given points as 3-dimensional vectors lying in the XY-plane, finds the
+    /// z-coordinate of their cross product.
     #[inline]
     pub fn cross(self, other: Point) -> f32 {
         self.x * other.y - self.y * other.x
@@ -33,7 +33,7 @@ impl Point {
         (other - self).length()
     }
 
-    /// Computes the length of a vector.
+    /// Computes the distance of a point from the origin.
     #[inline]
     pub fn length(self) -> f32 {
         self.dot(self).sqrt()
@@ -45,13 +45,13 @@ impl Point {
         (1.0 / self.length()) * self
     }
 
-    /// Linearly interpolates between two vectors by the parameter `t`.
+    /// Linearly interpolates between two points by the parameter `t`.
     #[inline]
     pub fn lerp(t: f32, a: Point, b: Point) -> Point {
         (1.0 - t) * a + t * b
     }
 
-    /// Finds the componentwise minimum of two vectors.
+    /// Finds the componentwise minimum of two points.
     #[inline]
     pub fn min(self, other: Point) -> Point {
         Point {
@@ -60,7 +60,7 @@ impl Point {
         }
     }
 
-    /// Finds the componentwise maximum of two vectors.
+    /// Finds the componentwise maximum of two points.
     #[inline]
     pub fn max(self, other: Point) -> Point {
         Point {
