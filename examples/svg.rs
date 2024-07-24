@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use flicker::{Color, Font, Renderer, Transform, Vec2};
+use flicker::{Affine, Color, Font, Renderer, Vec2};
 use portlight::{
     App, Bitmap, Event, MouseButton, Point, Response, Size, WindowContext, WindowOptions,
 };
@@ -54,7 +54,7 @@ struct State {
     timer: FrameTimer,
     mouse_pos: Point,
     dragging: bool,
-    transform: Transform,
+    transform: Affine,
 }
 
 impl State {
@@ -67,7 +67,7 @@ impl State {
             timer: FrameTimer::new(),
             mouse_pos: Point { x: -1.0, y: -1.0 },
             dragging: false,
-            transform: Transform::id(),
+            transform: Affine::id(),
         }
     }
 
@@ -87,7 +87,7 @@ impl State {
                 let time = std::time::Instant::now();
                 svg::render(
                     &self.commands,
-                    &self.transform.then(Transform::scale(scale as f32)),
+                    &self.transform.then(Affine::scale(scale as f32)),
                     &mut canvas,
                 );
                 let elapsed = time.elapsed();
@@ -98,7 +98,7 @@ impl State {
                     &format!("{:#.3?}", self.timer.average()),
                     &self.font,
                     24.0,
-                    &Transform::scale(scale as f32),
+                    &Affine::scale(scale as f32),
                     Color::rgba(0, 0, 0, 255),
                 );
 
@@ -109,7 +109,7 @@ impl State {
                     let prev = Vec2::new(self.mouse_pos.x as f32, self.mouse_pos.y as f32);
                     let curr = Vec2::new(pos.x as f32, pos.y as f32);
                     self.transform =
-                        self.transform.then(Transform::translate(curr.x - prev.x, curr.y - prev.y));
+                        self.transform.then(Affine::translate(curr.x - prev.x, curr.y - prev.y));
                 }
 
                 self.mouse_pos = pos;
@@ -134,9 +134,9 @@ impl State {
 
                 self.transform = self
                     .transform
-                    .then(Transform::translate(-0.5 * width, -0.5 * height))
-                    .then(Transform::scale(1.02f32.powf(delta.y as f32)))
-                    .then(Transform::translate(0.5 * width, 0.5 * height));
+                    .then(Affine::translate(-0.5 * width, -0.5 * height))
+                    .then(Affine::scale(1.02f32.powf(delta.y as f32)))
+                    .then(Affine::translate(0.5 * width, 0.5 * height));
 
                 return Response::Capture;
             }

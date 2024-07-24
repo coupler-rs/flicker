@@ -206,55 +206,55 @@ impl ops::Mul<f32> for Mat2x2 {
 
 /// A 2-dimensional affine transformation.
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Transform {
+pub struct Affine {
     pub matrix: Mat2x2,
     pub offset: Vec2,
 }
 
-impl Transform {
+impl Affine {
     /// Constructs an affine transformation from the given transformation
     /// matrix and translation vector.
-    pub fn new(matrix: Mat2x2, offset: Vec2) -> Transform {
-        Transform { matrix, offset }
+    pub fn new(matrix: Mat2x2, offset: Vec2) -> Affine {
+        Affine { matrix, offset }
     }
 
     /// Constructs an identity transformation.
-    pub fn id() -> Transform {
-        Transform {
+    pub fn id() -> Affine {
+        Affine {
             matrix: Mat2x2::id(),
             offset: Vec2::new(0.0, 0.0),
         }
     }
 
     /// Constructs a translation.
-    pub fn translate(x: f32, y: f32) -> Transform {
-        Transform {
+    pub fn translate(x: f32, y: f32) -> Affine {
+        Affine {
             matrix: Mat2x2::id(),
             offset: Vec2::new(x, y),
         }
     }
 
     /// Constructs a uniform scaling.
-    pub fn scale(scale: f32) -> Transform {
-        Transform {
+    pub fn scale(scale: f32) -> Affine {
+        Affine {
             matrix: Mat2x2::scale(scale),
             offset: Vec2::new(0.0, 0.0),
         }
     }
 
     /// Constructs a rotation.
-    pub fn rotate(angle: f32) -> Transform {
-        Transform {
+    pub fn rotate(angle: f32) -> Affine {
+        Affine {
             matrix: Mat2x2::rotate(angle),
             offset: Vec2::new(0.0, 0.0),
         }
     }
 
     /// Sequentially composes two affine transformations.
-    pub fn then(self, transform: Transform) -> Transform {
-        Transform {
-            matrix: transform.matrix * self.matrix,
-            offset: transform.matrix * self.offset + transform.offset,
+    pub fn then(self, other: Affine) -> Affine {
+        Affine {
+            matrix: other.matrix * self.matrix,
+            offset: other.matrix * self.offset + other.offset,
         }
     }
 

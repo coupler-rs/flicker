@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use flicker::{Renderer, Transform};
+use flicker::{Affine, Renderer};
 
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 1024;
@@ -14,7 +14,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("tiger", |b| {
         b.iter(|| {
-            svg::render(&commands, &Transform::scale(2.0), &mut canvas);
+            svg::render(&commands, &Affine::scale(2.0), &mut canvas);
         })
     });
 }

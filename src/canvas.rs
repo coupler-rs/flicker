@@ -1,6 +1,6 @@
 use crate::color::Color;
 use crate::flatten::{flatten, stroke};
-use crate::geom::{Transform, Vec2};
+use crate::geom::{Affine, Vec2};
 use crate::path::Path;
 use crate::raster::{Rasterizer, Segment};
 use crate::text::{Font, Glyph, TextLayout};
@@ -72,7 +72,7 @@ impl<'a> Canvas<'a> {
         self.renderer.segments.clear();
     }
 
-    pub fn fill_path(&mut self, path: &Path, transform: &Transform, color: Color) {
+    pub fn fill_path(&mut self, path: &Path, transform: &Affine, color: Color) {
         if path.is_empty() {
             return;
         }
@@ -111,7 +111,7 @@ impl<'a> Canvas<'a> {
         self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);
     }
 
-    pub fn stroke_path(&mut self, path: &Path, width: f32, transform: &Transform, color: Color) {
+    pub fn stroke_path(&mut self, path: &Path, width: f32, transform: &Affine, color: Color) {
         if path.is_empty() {
             return;
         }
@@ -164,7 +164,7 @@ impl<'a> Canvas<'a> {
         glyphs: &[Glyph],
         font: &Font,
         size: f32,
-        transform: &Transform,
+        transform: &Affine,
         color: Color,
     ) {
         use rustybuzz::ttf_parser::{GlyphId, OutlineBuilder};
@@ -212,9 +212,8 @@ impl<'a> Canvas<'a> {
             };
             font.face.outline_glyph(GlyphId(glyph.id), &mut builder);
 
-            let transform = Transform::scale(scale)
-                .then(Transform::translate(glyph.x, glyph.y))
-                .then(*transform);
+            let transform =
+                Affine::scale(scale).then(Affine::translate(glyph.x, glyph.y)).then(*transform);
 
             self.fill_path(&builder.path, &transform, color);
         }
@@ -225,7 +224,7 @@ impl<'a> Canvas<'a> {
         text: &str,
         font: &Font,
         size: f32,
-        transform: &Transform,
+        transform: &Affine,
         color: Color,
     ) {
         let layout = TextLayout::new(text, font, size);

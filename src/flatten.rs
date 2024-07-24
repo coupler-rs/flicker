@@ -1,11 +1,11 @@
-use crate::geom::{Transform, Vec2};
+use crate::geom::{Affine, Vec2};
 use crate::path::{Path, Verb};
 
 const TOLERANCE: f32 = 0.2;
 const MAX_SEGMENTS: usize = 100;
 
 trait Curve {
-    fn transform(&self, transform: &Transform) -> Self;
+    fn transform(&self, transform: &Affine) -> Self;
 
     fn start(&self) -> Vec2;
     fn end(&self) -> Vec2;
@@ -26,7 +26,7 @@ struct Line {
 
 impl Curve for Line {
     #[inline]
-    fn transform(&self, transform: &Transform) -> Self {
+    fn transform(&self, transform: &Affine) -> Self {
         Line {
             p0: transform.apply(self.p0),
             p1: transform.apply(self.p1),
@@ -78,7 +78,7 @@ struct Quadratic {
 
 impl Curve for Quadratic {
     #[inline]
-    fn transform(&self, transform: &Transform) -> Self {
+    fn transform(&self, transform: &Affine) -> Self {
         Quadratic {
             p0: transform.apply(self.p0),
             p1: transform.apply(self.p1),
@@ -136,7 +136,7 @@ struct Cubic {
 
 impl Curve for Cubic {
     #[inline]
-    fn transform(&self, transform: &Transform) -> Self {
+    fn transform(&self, transform: &Affine) -> Self {
         Cubic {
             p0: transform.apply(self.p0),
             p1: transform.apply(self.p1),
@@ -194,7 +194,7 @@ impl Curve for Cubic {
 }
 
 #[inline]
-fn flatten_curve<C: Curve>(curve: &C, transform: &Transform, sink: &mut impl FnMut(Vec2, Vec2)) {
+fn flatten_curve<C: Curve>(curve: &C, transform: &Affine, sink: &mut impl FnMut(Vec2, Vec2)) {
     let curve = curve.transform(transform);
 
     let segments = curve.segments_for_tolerance(TOLERANCE).clamp(1, MAX_SEGMENTS);
@@ -212,7 +212,7 @@ fn flatten_curve<C: Curve>(curve: &C, transform: &Transform, sink: &mut impl FnM
 }
 
 #[inline]
-pub fn flatten(path: &Path, transform: &Transform, sink: &mut impl FnMut(Vec2, Vec2)) {
+pub fn flatten(path: &Path, transform: &Affine, sink: &mut impl FnMut(Vec2, Vec2)) {
     let mut points = path.points.iter();
 
     let mut first = Vec2::new(0.0, 0.0);
@@ -283,7 +283,7 @@ pub fn flatten(path: &Path, transform: &Transform, sink: &mut impl FnMut(Vec2, V
 
 struct Stroker<S> {
     width: f32,
-    transform: Transform,
+    transform: Affine,
     first_right: Vec2,
     first_left: Vec2,
     prev_right: Vec2,
@@ -294,7 +294,7 @@ struct Stroker<S> {
 
 impl<S: FnMut(Vec2, Vec2)> Stroker<S> {
     #[inline]
-    fn new(width: f32, transform: &Transform, sink: S) -> Stroker<S> {
+    fn new(width: f32, transform: &Affine, sink: S) -> Stroker<S> {
         Stroker {
             width,
             transform: *transform,
@@ -401,7 +401,7 @@ impl<S: FnMut(Vec2, Vec2)> Stroker<S> {
 }
 
 #[inline]
-pub fn stroke(path: &Path, width: f32, transform: &Transform, sink: &mut impl FnMut(Vec2, Vec2)) {
+pub fn stroke(path: &Path, width: f32, transform: &Affine, sink: &mut impl FnMut(Vec2, Vec2)) {
     let mut stroker = Stroker::new(width, transform, sink);
 
     let mut points = path.points.iter();

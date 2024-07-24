@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::path;
 
-use flicker::{Canvas, Color, Mat2x2, Path, Transform, Vec2};
+use flicker::{Affine, Canvas, Color, Mat2x2, Path, Vec2};
 
 pub enum Style {
     Fill,
@@ -28,7 +28,7 @@ fn build_list(node: &usvg::Node, commands: &mut Vec<Command>) {
     match *node.borrow() {
         usvg::NodeKind::Path(ref p) => {
             let t = node.transform();
-            let transform = Transform::new(
+            let transform = Affine::new(
                 Mat2x2::new(t.a as f32, t.c as f32, t.b as f32, t.d as f32),
                 Vec2::new(t.e as f32, t.f as f32),
             );
@@ -94,7 +94,7 @@ fn build_list(node: &usvg::Node, commands: &mut Vec<Command>) {
     }
 }
 
-pub fn render(commands: &[Command], transform: &Transform, canvas: &mut Canvas) {
+pub fn render(commands: &[Command], transform: &Affine, canvas: &mut Canvas) {
     for command in commands {
         match command.style {
             Style::Fill => {
