@@ -87,7 +87,7 @@ impl State {
                 let time = std::time::Instant::now();
                 svg::render(
                     &self.commands,
-                    &self.transform.then(Affine::scale(scale as f32)),
+                    &(Affine::scale(scale as f32) * self.transform),
                     &mut canvas,
                 );
                 let elapsed = time.elapsed();
@@ -108,10 +108,8 @@ impl State {
                 let pos = Point::new(pos.x as f32, pos.y as f32);
 
                 if self.dragging {
-                    self.transform = self.transform.then(Affine::translate(
-                        pos.x - self.mouse_pos.x,
-                        pos.y - self.mouse_pos.y,
-                    ));
+                    let offset = pos - self.mouse_pos;
+                    self.transform = Affine::translate(offset.x, offset.y) * self.transform;
                 }
 
                 self.mouse_pos = pos;
@@ -134,11 +132,10 @@ impl State {
                 let width = WIDTH as f32;
                 let height = HEIGHT as f32;
 
-                self.transform = self
-                    .transform
-                    .then(Affine::translate(-0.5 * width, -0.5 * height))
-                    .then(Affine::scale(1.02f32.powf(delta.y as f32)))
-                    .then(Affine::translate(0.5 * width, 0.5 * height));
+                self.transform = Affine::translate(0.5 * width, 0.5 * height)
+                    * Affine::scale(1.02f32.powf(delta.y as f32))
+                    * Affine::translate(-0.5 * width, -0.5 * height)
+                    * self.transform;
 
                 return Response::Capture;
             }

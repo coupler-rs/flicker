@@ -28,8 +28,8 @@ impl Curve for Line {
     #[inline]
     fn transform(&self, transform: &Affine) -> Self {
         Line {
-            p0: transform.apply(self.p0),
-            p1: transform.apply(self.p1),
+            p0: *transform * self.p0,
+            p1: *transform * self.p1,
         }
     }
 
@@ -80,9 +80,9 @@ impl Curve for Quadratic {
     #[inline]
     fn transform(&self, transform: &Affine) -> Self {
         Quadratic {
-            p0: transform.apply(self.p0),
-            p1: transform.apply(self.p1),
-            p2: transform.apply(self.p2),
+            p0: *transform * self.p0,
+            p1: *transform * self.p1,
+            p2: *transform * self.p2,
         }
     }
 
@@ -138,10 +138,10 @@ impl Curve for Cubic {
     #[inline]
     fn transform(&self, transform: &Affine) -> Self {
         Cubic {
-            p0: transform.apply(self.p0),
-            p1: transform.apply(self.p1),
-            p2: transform.apply(self.p2),
-            p3: transform.apply(self.p3),
+            p0: *transform * self.p0,
+            p1: *transform * self.p1,
+            p2: *transform * self.p2,
+            p3: *transform * self.p3,
         }
     }
 
@@ -343,7 +343,7 @@ impl<S: FnMut(Point, Point)> Stroker<S> {
         } else {
             0.5 * self.width * (1.0 / normal_len) * start_normal
         };
-        let offset_transformed = self.transform.matrix * offset;
+        let offset_transformed = self.transform.linear() * offset;
         let right = start + offset_transformed;
         let left = start - offset_transformed;
 
@@ -369,7 +369,7 @@ impl<S: FnMut(Point, Point)> Stroker<S> {
             } else {
                 0.5 * self.width * (1.0 / normal_len) * normal
             };
-            let offset_transformed = self.transform.matrix * offset;
+            let offset_transformed = self.transform.linear() * offset;
             let right = point + offset_transformed;
             let left = point - offset_transformed;
 

@@ -136,138 +136,140 @@ impl ops::MulAssign<f32> for Point {
     }
 }
 
-/// A 2×2 matrix, in row-major order.
+/// A 2-dimensional affine transformation.
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Mat2x2(pub [f32; 4]);
+pub struct Affine([f32; 6]);
 
-impl Mat2x2 {
-    /// Constructs a 2×2 matrix. Arguments are given in row-major order.
-    pub fn new(a: f32, b: f32, c: f32, d: f32) -> Mat2x2 {
-        Mat2x2([a, b, c, d])
+impl Affine {
+    /// Constructs an affine transformation from a set of coefficients.
+    ///
+    /// The coefficients are interpreted as the first two rows of a 3×3 affine transformation matrix
+    /// in row-major order.
+    #[inline]
+    pub fn new(coeffs: [f32; 6]) -> Affine {
+        Affine(coeffs)
     }
 
-    /// Constructs an identity matrix.
-    pub fn id() -> Mat2x2 {
-        Mat2x2([1.0, 0.0, 0.0, 1.0])
+    /// Gets the coefficients of the transformation.
+    ///
+    /// The coefficients are the first two rows of the corresponding 3×3 affine transformation
+    /// matrix in row-major order.
+    #[inline]
+    pub fn coeffs(self) -> [f32; 6] {
+        self.0
     }
 
-    /// Constructs a uniform scaling matrix.
-    pub fn scale(scale: f32) -> Mat2x2 {
-        Mat2x2([scale, 0.0, 0.0, scale])
+    /// Constructs an identity transformation.
+    #[inline]
+    pub fn id() -> Affine {
+        Affine([1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
     }
 
-    /// Constructs a rotation matrix.
-    pub fn rotate(angle: f32) -> Mat2x2 {
-        Mat2x2([angle.cos(), angle.sin(), -angle.sin(), angle.cos()])
+    /// Constructs a translation.
+    #[inline]
+    pub fn translate(x: f32, y: f32) -> Affine {
+        Affine([1.0, 0.0, x, 0.0, 1.0, y])
     }
 
-    /// Computes the determinant of the matrix.
-    pub fn determinant(&self) -> f32 {
-        self.0[0] * self.0[3] - self.0[1] * self.0[2]
+    /// Constructs a uniform scaling.
+    #[inline]
+    pub fn scale(scale: f32) -> Affine {
+        Affine([scale, 0.0, 0.0, 0.0, scale, 0.0])
+    }
+
+    /// Constructs a rotation.
+    #[inline]
+    pub fn rotate(angle: f32) -> Affine {
+        let cos = angle.cos();
+        let sin = angle.sin();
+
+        Affine([cos, sin, 0.0, -sin, cos, 0.0])
+    }
+
+    // Gets the linear part of the affine transformation, i.e. without the translation.
+    #[inline]
+    pub fn linear(&self) -> Affine {
+        Affine([self.0[0], self.0[1], 0.0, self.0[3], self.0[4], 0.0])
     }
 }
 
-impl ops::Mul<Mat2x2> for Mat2x2 {
-    type Output = Mat2x2;
+impl ops::Mul<Affine> for Affine {
+    type Output = Affine;
+
     #[inline]
-    fn mul(self, rhs: Mat2x2) -> Mat2x2 {
-        Mat2x2([
-            self.0[0] * rhs.0[0] + self.0[1] * rhs.0[2],
-            self.0[0] * rhs.0[1] + self.0[1] * rhs.0[3],
-            self.0[2] * rhs.0[0] + self.0[3] * rhs.0[2],
-            self.0[2] * rhs.0[1] + self.0[3] * rhs.0[3],
+    fn mul(self, rhs: Affine) -> Affine {
+        Affine([
+            self.0[0] * rhs.0[0] + self.0[1] * rhs.0[3],
+            self.0[0] * rhs.0[1] + self.0[1] * rhs.0[4],
+            self.0[0] * rhs.0[2] + self.0[1] * rhs.0[5] + self.0[2],
+            self.0[3] * rhs.0[0] + self.0[4] * rhs.0[3],
+            self.0[3] * rhs.0[1] + self.0[4] * rhs.0[4],
+            self.0[3] * rhs.0[2] + self.0[4] * rhs.0[5] + self.0[5],
         ])
     }
 }
 
-impl ops::Mul<Point> for Mat2x2 {
+impl ops::MulAssign<Affine> for Affine {
+    #[inline]
+    fn mul_assign(&mut self, rhs: Affine) {
+        *self = *self * rhs;
+    }
+}
+
+impl ops::Mul<Point> for Affine {
     type Output = Point;
+
     #[inline]
     fn mul(self, rhs: Point) -> Point {
         Point {
-            x: self.0[0] * rhs.x + self.0[1] * rhs.y,
-            y: self.0[2] * rhs.x + self.0[3] * rhs.y,
+            x: self.0[0] * rhs.x + self.0[1] * rhs.y + self.0[2],
+            y: self.0[3] * rhs.x + self.0[4] * rhs.y + self.0[5],
         }
     }
 }
 
-impl ops::Mul<Mat2x2> for f32 {
-    type Output = Mat2x2;
-    #[inline]
-    fn mul(self, rhs: Mat2x2) -> Mat2x2 {
-        Mat2x2([
-            self * rhs.0[0],
-            self * rhs.0[1],
-            self * rhs.0[2],
-            self * rhs.0[3],
-        ])
-    }
-}
+impl ops::Mul<Affine> for Point {
+    type Output = Point;
 
-impl ops::Mul<f32> for Mat2x2 {
-    type Output = Mat2x2;
     #[inline]
-    fn mul(self, rhs: f32) -> Mat2x2 {
+    fn mul(self, rhs: Affine) -> Point {
         rhs * self
     }
 }
 
-/// A 2-dimensional affine transformation.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Affine {
-    pub matrix: Mat2x2,
-    pub offset: Point,
+impl ops::MulAssign<Affine> for Point {
+    #[inline]
+    fn mul_assign(&mut self, rhs: Affine) {
+        *self = rhs * *self;
+    }
 }
 
-impl Affine {
-    /// Constructs an affine transformation from the given transformation
-    /// matrix and translation vector.
-    pub fn new(matrix: Mat2x2, offset: Point) -> Affine {
-        Affine { matrix, offset }
+impl ops::Mul<Affine> for f32 {
+    type Output = Affine;
+    #[inline]
+    fn mul(self, rhs: Affine) -> Affine {
+        Affine([
+            self * rhs.0[0],
+            self * rhs.0[1],
+            self * rhs.0[2],
+            self * rhs.0[3],
+            self * rhs.0[4],
+            self * rhs.0[5],
+        ])
     }
+}
 
-    /// Constructs an identity transformation.
-    pub fn id() -> Affine {
-        Affine {
-            matrix: Mat2x2::id(),
-            offset: Point::new(0.0, 0.0),
-        }
+impl ops::Mul<f32> for Affine {
+    type Output = Affine;
+    #[inline]
+    fn mul(self, rhs: f32) -> Affine {
+        rhs * self
     }
+}
 
-    /// Constructs a translation.
-    pub fn translate(x: f32, y: f32) -> Affine {
-        Affine {
-            matrix: Mat2x2::id(),
-            offset: Point::new(x, y),
-        }
-    }
-
-    /// Constructs a uniform scaling.
-    pub fn scale(scale: f32) -> Affine {
-        Affine {
-            matrix: Mat2x2::scale(scale),
-            offset: Point::new(0.0, 0.0),
-        }
-    }
-
-    /// Constructs a rotation.
-    pub fn rotate(angle: f32) -> Affine {
-        Affine {
-            matrix: Mat2x2::rotate(angle),
-            offset: Point::new(0.0, 0.0),
-        }
-    }
-
-    /// Sequentially composes two affine transformations.
-    pub fn then(self, other: Affine) -> Affine {
-        Affine {
-            matrix: other.matrix * self.matrix,
-            offset: other.matrix * self.offset + other.offset,
-        }
-    }
-
-    /// Applies the affine transformation to the given vector.
-    pub fn apply(self, vec: Point) -> Point {
-        self.matrix * vec + self.offset
+impl ops::MulAssign<f32> for Affine {
+    #[inline]
+    fn mul_assign(&mut self, rhs: f32) {
+        *self = rhs * *self;
     }
 }

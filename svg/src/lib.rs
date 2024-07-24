@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::path;
 
-use flicker::{Affine, Canvas, Color, Mat2x2, Path, Point};
+use flicker::{Affine, Canvas, Color, Path, Point};
 
 pub enum Style {
     Fill,
@@ -28,19 +28,18 @@ fn build_list(node: &usvg::Node, commands: &mut Vec<Command>) {
     match *node.borrow() {
         usvg::NodeKind::Path(ref p) => {
             let t = node.transform();
-            let transform = Affine::new(
-                Mat2x2::new(t.a as f32, t.c as f32, t.b as f32, t.d as f32),
-                Point::new(t.e as f32, t.f as f32),
-            );
+            let transform = Affine::new([
+                t.a as f32, t.c as f32, t.e as f32, t.b as f32, t.d as f32, t.f as f32,
+            ]);
 
             let mut path = Path::new();
             for segment in p.data.0.iter() {
                 match *segment {
                     usvg::PathSegment::MoveTo { x, y } => {
-                        path.move_to(transform.apply(Point::new(x as f32, y as f32)));
+                        path.move_to(transform * Point::new(x as f32, y as f32));
                     }
                     usvg::PathSegment::LineTo { x, y } => {
-                        path.line_to(transform.apply(Point::new(x as f32, y as f32)));
+                        path.line_to(transform * Point::new(x as f32, y as f32));
                     }
                     usvg::PathSegment::CurveTo {
                         x1,
@@ -51,9 +50,9 @@ fn build_list(node: &usvg::Node, commands: &mut Vec<Command>) {
                         y,
                     } => {
                         path.cubic_to(
-                            transform.apply(Point::new(x1 as f32, y1 as f32)),
-                            transform.apply(Point::new(x2 as f32, y2 as f32)),
-                            transform.apply(Point::new(x as f32, y as f32)),
+                            transform * Point::new(x1 as f32, y1 as f32),
+                            transform * Point::new(x2 as f32, y2 as f32),
+                            transform * Point::new(x as f32, y as f32),
                         );
                     }
                     usvg::PathSegment::ClosePath => {

@@ -80,7 +80,7 @@ impl<'a> Canvas<'a> {
         let mut min = Point::new(self.width as f32, self.height as f32);
         let mut max = Point::new(0.0, 0.0);
         for &point in &path.points {
-            let transformed = transform.apply(point);
+            let transformed = *transform * point;
             min = min.min(transformed);
             max = max.max(transformed);
         }
@@ -116,13 +116,13 @@ impl<'a> Canvas<'a> {
             return;
         }
 
-        let dilate_x = transform.matrix * width * Point::new(0.5, 0.0);
-        let dilate_y = transform.matrix * width * Point::new(0.0, 0.5);
+        let dilate_x = transform.linear() * width * Point::new(0.5, 0.0);
+        let dilate_y = transform.linear() * width * Point::new(0.0, 0.5);
 
         let mut min = Point::new(self.width as f32, self.height as f32);
         let mut max = Point::new(0.0, 0.0);
         for &point in &path.points {
-            let transformed = transform.apply(point);
+            let transformed = *transform * point;
 
             let dilate0 = transformed - dilate_x - dilate_y;
             let dilate1 = transformed + dilate_x - dilate_y;
@@ -212,8 +212,7 @@ impl<'a> Canvas<'a> {
             };
             font.face.outline_glyph(GlyphId(glyph.id), &mut builder);
 
-            let transform =
-                Affine::scale(scale).then(Affine::translate(glyph.x, glyph.y)).then(*transform);
+            let transform = *transform * Affine::translate(glyph.x, glyph.y) * Affine::scale(scale);
 
             self.fill_path(&builder.path, &transform, color);
         }
