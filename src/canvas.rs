@@ -33,6 +33,7 @@ impl Renderer {
             data,
             width,
             height,
+            transform: Affine::id(),
         }
     }
 }
@@ -42,6 +43,7 @@ pub struct Canvas<'a> {
     data: &'a mut [u32],
     width: usize,
     height: usize,
+    transform: Affine,
 }
 
 impl<'a> Canvas<'a> {
@@ -51,6 +53,20 @@ impl<'a> Canvas<'a> {
 
     pub fn height(&self) -> usize {
         self.height
+    }
+
+    pub fn with_transform<F, R>(&mut self, transform: Affine, f: F) -> R
+    where
+        F: FnOnce(&mut Canvas) -> R,
+    {
+        let saved = self.transform;
+        self.transform = saved * transform;
+
+        let result = f(self);
+
+        self.transform = saved;
+
+        result
     }
 
     pub fn clear(&mut self, color: Color) {
@@ -76,6 +92,8 @@ impl<'a> Canvas<'a> {
         if path.is_empty() {
             return;
         }
+
+        let transform = self.transform * transform;
 
         let mut min = Point::new(self.width as f32, self.height as f32);
         let mut max = Point::new(0.0, 0.0);
@@ -115,6 +133,8 @@ impl<'a> Canvas<'a> {
         if path.is_empty() {
             return;
         }
+
+        let transform = self.transform * transform;
 
         let dilate_x = transform.linear() * width * Point::new(0.5, 0.0);
         let dilate_y = transform.linear() * width * Point::new(0.0, 0.5);
