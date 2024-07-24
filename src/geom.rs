@@ -72,6 +72,7 @@ impl Point {
 
 impl ops::Add for Point {
     type Output = Point;
+
     #[inline]
     fn add(self, rhs: Point) -> Point {
         Point {
@@ -90,6 +91,7 @@ impl ops::AddAssign for Point {
 
 impl ops::Sub for Point {
     type Output = Point;
+
     #[inline]
     fn sub(self, rhs: Point) -> Point {
         Point {
@@ -106,25 +108,31 @@ impl ops::SubAssign for Point {
     }
 }
 
-impl ops::Mul<f32> for Point {
-    type Output = Point;
-    #[inline]
-    fn mul(self, rhs: f32) -> Point {
-        Point {
-            x: self.x * rhs,
-            y: self.y * rhs,
-        }
-    }
-}
-
 impl ops::Mul<Point> for f32 {
     type Output = Point;
+
     #[inline]
     fn mul(self, rhs: Point) -> Point {
         Point {
             x: self * rhs.x,
             y: self * rhs.y,
         }
+    }
+}
+
+impl ops::Mul<f32> for Point {
+    type Output = Point;
+
+    #[inline]
+    fn mul(self, rhs: f32) -> Point {
+        rhs * self
+    }
+}
+
+impl ops::MulAssign<f32> for Point {
+    #[inline]
+    fn mul_assign(&mut self, rhs: f32) {
+        *self = rhs * *self;
     }
 }
 
