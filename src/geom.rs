@@ -2,34 +2,34 @@ use std::ops;
 
 /// A 2-dimensional vector.
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Vec2 {
+pub struct Point {
     pub x: f32,
     pub y: f32,
 }
 
-impl Vec2 {
+impl Point {
     /// Constructs a 2-dimensional vector.
     #[inline]
-    pub fn new(x: f32, y: f32) -> Vec2 {
-        Vec2 { x: x, y: y }
+    pub fn new(x: f32, y: f32) -> Point {
+        Point { x: x, y: y }
     }
 
     /// Computes the dot product between two vectors.
     #[inline]
-    pub fn dot(self, other: Vec2) -> f32 {
+    pub fn dot(self, other: Point) -> f32 {
         self.x * other.x + self.y * other.y
     }
 
     /// Considering the two given vectors as 3-dimensional vectors lying in the
     /// XY-plane, finds the z-coordinate of their cross product.
     #[inline]
-    pub fn cross(self, other: Vec2) -> f32 {
+    pub fn cross(self, other: Point) -> f32 {
         self.x * other.y - self.y * other.x
     }
 
     /// Computes the distance between two points.
     #[inline]
-    pub fn distance(self, other: Vec2) -> f32 {
+    pub fn distance(self, other: Point) -> f32 {
         (other - self).length()
     }
 
@@ -41,20 +41,20 @@ impl Vec2 {
 
     /// Finds the vector with the same direction and a length of 1.
     #[inline]
-    pub fn normalized(self) -> Vec2 {
+    pub fn normalized(self) -> Point {
         (1.0 / self.length()) * self
     }
 
     /// Linearly interpolates between two vectors by the parameter `t`.
     #[inline]
-    pub fn lerp(t: f32, a: Vec2, b: Vec2) -> Vec2 {
+    pub fn lerp(t: f32, a: Point, b: Point) -> Point {
         (1.0 - t) * a + t * b
     }
 
     /// Finds the componentwise minimum of two vectors.
     #[inline]
-    pub fn min(self, other: Vec2) -> Vec2 {
-        Vec2 {
+    pub fn min(self, other: Point) -> Point {
+        Point {
             x: self.x.min(other.x),
             y: self.y.min(other.y),
         }
@@ -62,66 +62,66 @@ impl Vec2 {
 
     /// Finds the componentwise maximum of two vectors.
     #[inline]
-    pub fn max(self, other: Vec2) -> Vec2 {
-        Vec2 {
+    pub fn max(self, other: Point) -> Point {
+        Point {
             x: self.x.max(other.x),
             y: self.y.max(other.y),
         }
     }
 }
 
-impl ops::Add for Vec2 {
-    type Output = Vec2;
+impl ops::Add for Point {
+    type Output = Point;
     #[inline]
-    fn add(self, rhs: Vec2) -> Vec2 {
-        Vec2 {
+    fn add(self, rhs: Point) -> Point {
+        Point {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
         }
     }
 }
 
-impl ops::AddAssign for Vec2 {
+impl ops::AddAssign for Point {
     #[inline]
-    fn add_assign(&mut self, other: Vec2) {
+    fn add_assign(&mut self, other: Point) {
         *self = *self + other;
     }
 }
 
-impl ops::Sub for Vec2 {
-    type Output = Vec2;
+impl ops::Sub for Point {
+    type Output = Point;
     #[inline]
-    fn sub(self, rhs: Vec2) -> Vec2 {
-        Vec2 {
+    fn sub(self, rhs: Point) -> Point {
+        Point {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
         }
     }
 }
 
-impl ops::SubAssign for Vec2 {
+impl ops::SubAssign for Point {
     #[inline]
-    fn sub_assign(&mut self, other: Vec2) {
+    fn sub_assign(&mut self, other: Point) {
         *self = *self - other;
     }
 }
 
-impl ops::Mul<f32> for Vec2 {
-    type Output = Vec2;
+impl ops::Mul<f32> for Point {
+    type Output = Point;
     #[inline]
-    fn mul(self, rhs: f32) -> Vec2 {
-        Vec2 {
+    fn mul(self, rhs: f32) -> Point {
+        Point {
             x: self.x * rhs,
             y: self.y * rhs,
         }
     }
 }
 
-impl ops::Mul<Vec2> for f32 {
-    type Output = Vec2;
+impl ops::Mul<Point> for f32 {
+    type Output = Point;
     #[inline]
-    fn mul(self, rhs: Vec2) -> Vec2 {
-        Vec2 {
+    fn mul(self, rhs: Point) -> Point {
+        Point {
             x: self * rhs.x,
             y: self * rhs.y,
         }
@@ -172,11 +172,11 @@ impl ops::Mul<Mat2x2> for Mat2x2 {
     }
 }
 
-impl ops::Mul<Vec2> for Mat2x2 {
-    type Output = Vec2;
+impl ops::Mul<Point> for Mat2x2 {
+    type Output = Point;
     #[inline]
-    fn mul(self, rhs: Vec2) -> Vec2 {
-        Vec2 {
+    fn mul(self, rhs: Point) -> Point {
+        Point {
             x: self.0[0] * rhs.x + self.0[1] * rhs.y,
             y: self.0[2] * rhs.x + self.0[3] * rhs.y,
         }
@@ -208,13 +208,13 @@ impl ops::Mul<f32> for Mat2x2 {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Affine {
     pub matrix: Mat2x2,
-    pub offset: Vec2,
+    pub offset: Point,
 }
 
 impl Affine {
     /// Constructs an affine transformation from the given transformation
     /// matrix and translation vector.
-    pub fn new(matrix: Mat2x2, offset: Vec2) -> Affine {
+    pub fn new(matrix: Mat2x2, offset: Point) -> Affine {
         Affine { matrix, offset }
     }
 
@@ -222,7 +222,7 @@ impl Affine {
     pub fn id() -> Affine {
         Affine {
             matrix: Mat2x2::id(),
-            offset: Vec2::new(0.0, 0.0),
+            offset: Point::new(0.0, 0.0),
         }
     }
 
@@ -230,7 +230,7 @@ impl Affine {
     pub fn translate(x: f32, y: f32) -> Affine {
         Affine {
             matrix: Mat2x2::id(),
-            offset: Vec2::new(x, y),
+            offset: Point::new(x, y),
         }
     }
 
@@ -238,7 +238,7 @@ impl Affine {
     pub fn scale(scale: f32) -> Affine {
         Affine {
             matrix: Mat2x2::scale(scale),
-            offset: Vec2::new(0.0, 0.0),
+            offset: Point::new(0.0, 0.0),
         }
     }
 
@@ -246,7 +246,7 @@ impl Affine {
     pub fn rotate(angle: f32) -> Affine {
         Affine {
             matrix: Mat2x2::rotate(angle),
-            offset: Vec2::new(0.0, 0.0),
+            offset: Point::new(0.0, 0.0),
         }
     }
 
@@ -259,7 +259,7 @@ impl Affine {
     }
 
     /// Applies the affine transformation to the given vector.
-    pub fn apply(self, vec: Vec2) -> Vec2 {
+    pub fn apply(self, vec: Point) -> Point {
         self.matrix * vec + self.offset
     }
 }

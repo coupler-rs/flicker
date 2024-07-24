@@ -1,6 +1,6 @@
 use crate::color::Color;
 use crate::flatten::{flatten, stroke};
-use crate::geom::{Affine, Vec2};
+use crate::geom::{Affine, Point};
 use crate::path::Path;
 use crate::raster::{Rasterizer, Segment};
 use crate::text::{Font, Glyph, TextLayout};
@@ -59,7 +59,7 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    fn add_segment(&mut self, p1: Vec2, p2: Vec2) {
+    fn add_segment(&mut self, p1: Point, p2: Point) {
         self.renderer.segments.push(Segment { p1, p2 });
 
         if self.renderer.segments.len() == self.renderer.segments.capacity() {
@@ -77,8 +77,8 @@ impl<'a> Canvas<'a> {
             return;
         }
 
-        let mut min = Vec2::new(self.width as f32, self.height as f32);
-        let mut max = Vec2::new(0.0, 0.0);
+        let mut min = Point::new(self.width as f32, self.height as f32);
+        let mut max = Point::new(0.0, 0.0);
         for &point in &path.points {
             let transformed = transform.apply(point);
             min = min.min(transformed);
@@ -97,7 +97,7 @@ impl<'a> Canvas<'a> {
         let path_width = max_x - min_x;
         let path_height = max_y - min_y;
 
-        let offset = Vec2::new(min_x as f32, min_y as f32);
+        let offset = Point::new(min_x as f32, min_y as f32);
 
         self.renderer.rasterizer.set_size(path_width, path_height);
 
@@ -116,11 +116,11 @@ impl<'a> Canvas<'a> {
             return;
         }
 
-        let dilate_x = transform.matrix * width * Vec2::new(0.5, 0.0);
-        let dilate_y = transform.matrix * width * Vec2::new(0.0, 0.5);
+        let dilate_x = transform.matrix * width * Point::new(0.5, 0.0);
+        let dilate_y = transform.matrix * width * Point::new(0.0, 0.5);
 
-        let mut min = Vec2::new(self.width as f32, self.height as f32);
-        let mut max = Vec2::new(0.0, 0.0);
+        let mut min = Point::new(self.width as f32, self.height as f32);
+        let mut max = Point::new(0.0, 0.0);
         for &point in &path.points {
             let transformed = transform.apply(point);
 
@@ -145,7 +145,7 @@ impl<'a> Canvas<'a> {
         let path_width = max_x - min_x;
         let path_height = max_y - min_y;
 
-        let offset = Vec2::new(min_x as f32, min_y as f32);
+        let offset = Point::new(min_x as f32, min_y as f32);
 
         self.renderer.rasterizer.set_size(path_width, path_height);
 
@@ -176,25 +176,25 @@ impl<'a> Canvas<'a> {
 
         impl OutlineBuilder for Builder {
             fn move_to(&mut self, x: f32, y: f32) {
-                self.path.move_to(Vec2::new(x, self.ascent - y));
+                self.path.move_to(Point::new(x, self.ascent - y));
             }
 
             fn line_to(&mut self, x: f32, y: f32) {
-                self.path.line_to(Vec2::new(x, self.ascent - y));
+                self.path.line_to(Point::new(x, self.ascent - y));
             }
 
             fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
                 self.path.quadratic_to(
-                    Vec2::new(x1, self.ascent - y1),
-                    Vec2::new(x, self.ascent - y),
+                    Point::new(x1, self.ascent - y1),
+                    Point::new(x, self.ascent - y),
                 );
             }
 
             fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
                 self.path.cubic_to(
-                    Vec2::new(x1, self.ascent - y1),
-                    Vec2::new(x2, self.ascent - y2),
-                    Vec2::new(x, self.ascent - y),
+                    Point::new(x1, self.ascent - y1),
+                    Point::new(x2, self.ascent - y2),
+                    Point::new(x, self.ascent - y),
                 );
             }
 

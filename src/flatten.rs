@@ -1,4 +1,4 @@
-use crate::geom::{Affine, Vec2};
+use crate::geom::{Affine, Point};
 use crate::path::{Path, Verb};
 
 const TOLERANCE: f32 = 0.2;
@@ -7,21 +7,21 @@ const MAX_SEGMENTS: usize = 100;
 trait Curve {
     fn transform(&self, transform: &Affine) -> Self;
 
-    fn start(&self) -> Vec2;
-    fn end(&self) -> Vec2;
-    fn eval(&self, t: f32) -> Vec2;
+    fn start(&self) -> Point;
+    fn end(&self) -> Point;
+    fn eval(&self, t: f32) -> Point;
 
-    fn tangent(&self, t: f32) -> Vec2;
-    fn start_tangent(&self) -> Vec2;
-    fn end_tangent(&self) -> Vec2;
+    fn tangent(&self, t: f32) -> Point;
+    fn start_tangent(&self) -> Point;
+    fn end_tangent(&self) -> Point;
 
     fn segments_for_tolerance(&self, tolerance: f32) -> usize;
 }
 
 #[derive(Copy, Clone)]
 struct Line {
-    p0: Vec2,
-    p1: Vec2,
+    p0: Point,
+    p1: Point,
 }
 
 impl Curve for Line {
@@ -34,32 +34,32 @@ impl Curve for Line {
     }
 
     #[inline]
-    fn start(&self) -> Vec2 {
+    fn start(&self) -> Point {
         self.p0
     }
 
     #[inline]
-    fn end(&self) -> Vec2 {
+    fn end(&self) -> Point {
         self.p1
     }
 
     #[inline]
-    fn eval(&self, t: f32) -> Vec2 {
-        Vec2::lerp(t, self.p0, self.p1)
+    fn eval(&self, t: f32) -> Point {
+        Point::lerp(t, self.p0, self.p1)
     }
 
     #[inline]
-    fn start_tangent(&self) -> Vec2 {
+    fn start_tangent(&self) -> Point {
         self.p1 - self.p0
     }
 
     #[inline]
-    fn end_tangent(&self) -> Vec2 {
+    fn end_tangent(&self) -> Point {
         self.p1 - self.p0
     }
 
     #[inline]
-    fn tangent(&self, _t: f32) -> Vec2 {
+    fn tangent(&self, _t: f32) -> Point {
         self.p1 - self.p0
     }
 
@@ -71,9 +71,9 @@ impl Curve for Line {
 
 #[derive(Copy, Clone)]
 struct Quadratic {
-    p0: Vec2,
-    p1: Vec2,
-    p2: Vec2,
+    p0: Point,
+    p1: Point,
+    p2: Point,
 }
 
 impl Curve for Quadratic {
@@ -87,35 +87,35 @@ impl Curve for Quadratic {
     }
 
     #[inline]
-    fn start(&self) -> Vec2 {
+    fn start(&self) -> Point {
         self.p0
     }
 
     #[inline]
-    fn end(&self) -> Vec2 {
+    fn end(&self) -> Point {
         self.p2
     }
 
     #[inline]
-    fn eval(&self, t: f32) -> Vec2 {
-        let p01 = Vec2::lerp(t, self.p0, self.p1);
-        let p12 = Vec2::lerp(t, self.p1, self.p2);
-        Vec2::lerp(t, p01, p12)
+    fn eval(&self, t: f32) -> Point {
+        let p01 = Point::lerp(t, self.p0, self.p1);
+        let p12 = Point::lerp(t, self.p1, self.p2);
+        Point::lerp(t, p01, p12)
     }
 
     #[inline]
-    fn start_tangent(&self) -> Vec2 {
+    fn start_tangent(&self) -> Point {
         self.p1 - self.p0
     }
 
     #[inline]
-    fn end_tangent(&self) -> Vec2 {
+    fn end_tangent(&self) -> Point {
         self.p2 - self.p1
     }
 
     #[inline]
-    fn tangent(&self, t: f32) -> Vec2 {
-        Vec2::lerp(t, self.p1 - self.p0, self.p2 - self.p1)
+    fn tangent(&self, t: f32) -> Point {
+        Point::lerp(t, self.p1 - self.p0, self.p2 - self.p1)
     }
 
     #[inline]
@@ -128,10 +128,10 @@ impl Curve for Quadratic {
 
 #[derive(Copy, Clone)]
 struct Cubic {
-    p0: Vec2,
-    p1: Vec2,
-    p2: Vec2,
-    p3: Vec2,
+    p0: Point,
+    p1: Point,
+    p2: Point,
+    p3: Point,
 }
 
 impl Curve for Cubic {
@@ -146,39 +146,39 @@ impl Curve for Cubic {
     }
 
     #[inline]
-    fn start(&self) -> Vec2 {
+    fn start(&self) -> Point {
         self.p0
     }
 
     #[inline]
-    fn end(&self) -> Vec2 {
+    fn end(&self) -> Point {
         self.p3
     }
 
     #[inline]
-    fn eval(&self, t: f32) -> Vec2 {
-        let p01 = Vec2::lerp(t, self.p0, self.p1);
-        let p12 = Vec2::lerp(t, self.p1, self.p2);
-        let p23 = Vec2::lerp(t, self.p2, self.p3);
-        let p012 = Vec2::lerp(t, p01, p12);
-        let p123 = Vec2::lerp(t, p12, p23);
-        Vec2::lerp(t, p012, p123)
+    fn eval(&self, t: f32) -> Point {
+        let p01 = Point::lerp(t, self.p0, self.p1);
+        let p12 = Point::lerp(t, self.p1, self.p2);
+        let p23 = Point::lerp(t, self.p2, self.p3);
+        let p012 = Point::lerp(t, p01, p12);
+        let p123 = Point::lerp(t, p12, p23);
+        Point::lerp(t, p012, p123)
     }
 
     #[inline]
-    fn tangent(&self, t: f32) -> Vec2 {
-        let t1 = Vec2::lerp(t, self.p1 - self.p0, self.p2 - self.p1);
-        let t2 = Vec2::lerp(t, self.p2 - self.p1, self.p3 - self.p2);
-        Vec2::lerp(t, t1, t2)
+    fn tangent(&self, t: f32) -> Point {
+        let t1 = Point::lerp(t, self.p1 - self.p0, self.p2 - self.p1);
+        let t2 = Point::lerp(t, self.p2 - self.p1, self.p3 - self.p2);
+        Point::lerp(t, t1, t2)
     }
 
     #[inline]
-    fn start_tangent(&self) -> Vec2 {
+    fn start_tangent(&self) -> Point {
         self.p1 - self.p0
     }
 
     #[inline]
-    fn end_tangent(&self) -> Vec2 {
+    fn end_tangent(&self) -> Point {
         self.p3 - self.p2
     }
 
@@ -194,7 +194,7 @@ impl Curve for Cubic {
 }
 
 #[inline]
-fn flatten_curve<C: Curve>(curve: &C, transform: &Affine, sink: &mut impl FnMut(Vec2, Vec2)) {
+fn flatten_curve<C: Curve>(curve: &C, transform: &Affine, sink: &mut impl FnMut(Point, Point)) {
     let curve = curve.transform(transform);
 
     let segments = curve.segments_for_tolerance(TOLERANCE).clamp(1, MAX_SEGMENTS);
@@ -212,11 +212,11 @@ fn flatten_curve<C: Curve>(curve: &C, transform: &Affine, sink: &mut impl FnMut(
 }
 
 #[inline]
-pub fn flatten(path: &Path, transform: &Affine, sink: &mut impl FnMut(Vec2, Vec2)) {
+pub fn flatten(path: &Path, transform: &Affine, sink: &mut impl FnMut(Point, Point)) {
     let mut points = path.points.iter();
 
-    let mut first = Vec2::new(0.0, 0.0);
-    let mut prev = Vec2::new(0.0, 0.0);
+    let mut first = Point::new(0.0, 0.0);
+    let mut prev = Point::new(0.0, 0.0);
     for verb in &path.verbs {
         match *verb {
             Verb::Move => {
@@ -284,24 +284,24 @@ pub fn flatten(path: &Path, transform: &Affine, sink: &mut impl FnMut(Vec2, Vec2
 struct Stroker<S> {
     width: f32,
     transform: Affine,
-    first_right: Vec2,
-    first_left: Vec2,
-    prev_right: Vec2,
-    prev_left: Vec2,
+    first_right: Point,
+    first_left: Point,
+    prev_right: Point,
+    prev_left: Point,
     closed: bool,
     sink: S,
 }
 
-impl<S: FnMut(Vec2, Vec2)> Stroker<S> {
+impl<S: FnMut(Point, Point)> Stroker<S> {
     #[inline]
     fn new(width: f32, transform: &Affine, sink: S) -> Stroker<S> {
         Stroker {
             width,
             transform: *transform,
-            first_right: Vec2::new(0.0, 0.0),
-            first_left: Vec2::new(0.0, 0.0),
-            prev_right: Vec2::new(0.0, 0.0),
-            prev_left: Vec2::new(0.0, 0.0),
+            first_right: Point::new(0.0, 0.0),
+            first_left: Point::new(0.0, 0.0),
+            prev_right: Point::new(0.0, 0.0),
+            prev_left: Point::new(0.0, 0.0),
             closed: true,
             sink,
         }
@@ -318,7 +318,7 @@ impl<S: FnMut(Vec2, Vec2)> Stroker<S> {
     }
 
     #[inline]
-    fn join(&mut self, right: Vec2, left: Vec2) {
+    fn join(&mut self, right: Point, left: Point) {
         (self.sink)(self.prev_right, right);
         (self.sink)(left, self.prev_left);
     }
@@ -336,10 +336,10 @@ impl<S: FnMut(Vec2, Vec2)> Stroker<S> {
 
         let start = curve_transformed.start();
         let start_tangent = curve.tangent(dt.min(0.5));
-        let start_normal = Vec2::new(-start_tangent.y, start_tangent.x);
+        let start_normal = Point::new(-start_tangent.y, start_tangent.x);
         let normal_len = start_normal.length();
         let offset = if normal_len.abs() < 1e-6 {
-            Vec2::new(0.0, 0.0)
+            Point::new(0.0, 0.0)
         } else {
             0.5 * self.width * (1.0 / normal_len) * start_normal
         };
@@ -362,10 +362,10 @@ impl<S: FnMut(Vec2, Vec2)> Stroker<S> {
         for _ in 0..segments {
             let point = curve_transformed.eval(t);
             let tangent = curve.tangent(t.min(1.0 - dt));
-            let normal = Vec2::new(-tangent.y, tangent.x);
+            let normal = Point::new(-tangent.y, tangent.x);
             let normal_len = normal.length();
             let offset = if normal_len.abs() < 1e-6 {
-                Vec2::new(0.0, 0.0)
+                Point::new(0.0, 0.0)
             } else {
                 0.5 * self.width * (1.0 / normal_len) * normal
             };
@@ -401,11 +401,11 @@ impl<S: FnMut(Vec2, Vec2)> Stroker<S> {
 }
 
 #[inline]
-pub fn stroke(path: &Path, width: f32, transform: &Affine, sink: &mut impl FnMut(Vec2, Vec2)) {
+pub fn stroke(path: &Path, width: f32, transform: &Affine, sink: &mut impl FnMut(Point, Point)) {
     let mut stroker = Stroker::new(width, transform, sink);
 
     let mut points = path.points.iter();
-    let mut prev = Vec2::new(0.0, 0.0);
+    let mut prev = Point::new(0.0, 0.0);
     for verb in &path.verbs {
         match *verb {
             Verb::Move => {

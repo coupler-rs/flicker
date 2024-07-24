@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::path;
 
-use flicker::{Affine, Canvas, Color, Mat2x2, Path, Vec2};
+use flicker::{Affine, Canvas, Color, Mat2x2, Path, Point};
 
 pub enum Style {
     Fill,
@@ -30,17 +30,17 @@ fn build_list(node: &usvg::Node, commands: &mut Vec<Command>) {
             let t = node.transform();
             let transform = Affine::new(
                 Mat2x2::new(t.a as f32, t.c as f32, t.b as f32, t.d as f32),
-                Vec2::new(t.e as f32, t.f as f32),
+                Point::new(t.e as f32, t.f as f32),
             );
 
             let mut path = Path::new();
             for segment in p.data.0.iter() {
                 match *segment {
                     usvg::PathSegment::MoveTo { x, y } => {
-                        path.move_to(transform.apply(Vec2::new(x as f32, y as f32)));
+                        path.move_to(transform.apply(Point::new(x as f32, y as f32)));
                     }
                     usvg::PathSegment::LineTo { x, y } => {
-                        path.line_to(transform.apply(Vec2::new(x as f32, y as f32)));
+                        path.line_to(transform.apply(Point::new(x as f32, y as f32)));
                     }
                     usvg::PathSegment::CurveTo {
                         x1,
@@ -51,9 +51,9 @@ fn build_list(node: &usvg::Node, commands: &mut Vec<Command>) {
                         y,
                     } => {
                         path.cubic_to(
-                            transform.apply(Vec2::new(x1 as f32, y1 as f32)),
-                            transform.apply(Vec2::new(x2 as f32, y2 as f32)),
-                            transform.apply(Vec2::new(x as f32, y as f32)),
+                            transform.apply(Point::new(x1 as f32, y1 as f32)),
+                            transform.apply(Point::new(x2 as f32, y2 as f32)),
+                            transform.apply(Point::new(x as f32, y as f32)),
                         );
                     }
                     usvg::PathSegment::ClosePath => {

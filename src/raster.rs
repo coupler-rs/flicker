@@ -1,12 +1,12 @@
 use std::mem;
 
 use crate::simd::*;
-use crate::{geom::Vec2, Color};
+use crate::{geom::Point, Color};
 
 #[derive(Copy, Clone)]
 pub struct Segment {
-    pub p1: Vec2,
-    pub p2: Vec2,
+    pub p1: Point,
+    pub p2: Point,
 }
 
 const BITS_PER_BITMASK: usize = u64::BITS as usize;
@@ -21,7 +21,7 @@ const PIXELS_PER_BITMASK_SHIFT: usize = PIXELS_PER_BITMASK.trailing_zeros() as u
 trait FlipCoords {
     fn winding(value: f32) -> f32;
     fn row(y: usize, height: usize) -> usize;
-    fn y_coord(p: Vec2, height: f32) -> Vec2;
+    fn y_coord(p: Point, height: f32) -> Point;
 }
 
 struct PosXPosY;
@@ -38,8 +38,8 @@ impl FlipCoords for PosXPosY {
     }
 
     #[inline(always)]
-    fn y_coord(p: Vec2, _height: f32) -> Vec2 {
-        Vec2::new(p.x, p.y)
+    fn y_coord(p: Point, _height: f32) -> Point {
+        Point::new(p.x, p.y)
     }
 }
 
@@ -57,8 +57,8 @@ impl FlipCoords for PosXNegY {
     }
 
     #[inline(always)]
-    fn y_coord(p: Vec2, height: f32) -> Vec2 {
-        Vec2::new(p.x, height - p.y)
+    fn y_coord(p: Point, height: f32) -> Point {
+        Point::new(p.x, height - p.y)
     }
 }
 
@@ -76,8 +76,8 @@ impl FlipCoords for NegXPosY {
     }
 
     #[inline(always)]
-    fn y_coord(p: Vec2, height: f32) -> Vec2 {
-        Vec2::new(p.x, height - p.y)
+    fn y_coord(p: Point, height: f32) -> Point {
+        Point::new(p.x, height - p.y)
     }
 }
 
@@ -95,8 +95,8 @@ impl FlipCoords for NegXNegY {
     }
 
     #[inline(always)]
-    fn y_coord(p: Vec2, _height: f32) -> Vec2 {
-        Vec2::new(p.x, p.y)
+    fn y_coord(p: Point, _height: f32) -> Point {
+        Point::new(p.x, p.y)
     }
 }
 
@@ -170,7 +170,7 @@ impl Rasterizer {
     }
 
     #[inline(always)]
-    fn add_segment<Flip: FlipCoords>(&mut self, p1: Vec2, p2: Vec2) {
+    fn add_segment<Flip: FlipCoords>(&mut self, p1: Point, p2: Point) {
         let p1 = Flip::y_coord(p1, self.height as f32);
         let p2 = Flip::y_coord(p2, self.height as f32);
 

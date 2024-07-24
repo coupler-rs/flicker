@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use flicker::{Affine, Color, Font, Renderer, Vec2};
+use flicker::{Affine, Color, Font, Point, Renderer};
 use portlight::{
-    App, Bitmap, Event, MouseButton, Point, Response, Size, WindowContext, WindowOptions,
+    App, Bitmap, Event, MouseButton, Response, Size, WindowContext, WindowOptions,
 };
 
 const WIDTH: usize = 512;
@@ -105,11 +105,13 @@ impl State {
                 cx.window().present(Bitmap::new(&self.framebuffer, width, height));
             }
             Event::MouseMove(pos) => {
+                let pos = Point::new(pos.x as f32, pos.y as f32);
+
                 if self.dragging {
-                    let prev = Vec2::new(self.mouse_pos.x as f32, self.mouse_pos.y as f32);
-                    let curr = Vec2::new(pos.x as f32, pos.y as f32);
-                    self.transform =
-                        self.transform.then(Affine::translate(curr.x - prev.x, curr.y - prev.y));
+                    self.transform = self.transform.then(Affine::translate(
+                        pos.x - self.mouse_pos.x,
+                        pos.y - self.mouse_pos.y,
+                    ));
                 }
 
                 self.mouse_pos = pos;
