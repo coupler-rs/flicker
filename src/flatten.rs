@@ -5,7 +5,7 @@ const TOLERANCE: f32 = 0.2;
 const MAX_SEGMENTS: usize = 100;
 
 trait Curve {
-    fn transform(&self, transform: &Affine) -> Self;
+    fn transform(&self, transform: Affine) -> Self;
 
     fn start(&self) -> Point;
     fn end(&self) -> Point;
@@ -26,10 +26,10 @@ struct Line {
 
 impl Curve for Line {
     #[inline]
-    fn transform(&self, transform: &Affine) -> Self {
+    fn transform(&self, transform: Affine) -> Self {
         Line {
-            p0: *transform * self.p0,
-            p1: *transform * self.p1,
+            p0: transform * self.p0,
+            p1: transform * self.p1,
         }
     }
 
@@ -78,11 +78,11 @@ struct Quadratic {
 
 impl Curve for Quadratic {
     #[inline]
-    fn transform(&self, transform: &Affine) -> Self {
+    fn transform(&self, transform: Affine) -> Self {
         Quadratic {
-            p0: *transform * self.p0,
-            p1: *transform * self.p1,
-            p2: *transform * self.p2,
+            p0: transform * self.p0,
+            p1: transform * self.p1,
+            p2: transform * self.p2,
         }
     }
 
@@ -136,12 +136,12 @@ struct Cubic {
 
 impl Curve for Cubic {
     #[inline]
-    fn transform(&self, transform: &Affine) -> Self {
+    fn transform(&self, transform: Affine) -> Self {
         Cubic {
-            p0: *transform * self.p0,
-            p1: *transform * self.p1,
-            p2: *transform * self.p2,
-            p3: *transform * self.p3,
+            p0: transform * self.p0,
+            p1: transform * self.p1,
+            p2: transform * self.p2,
+            p3: transform * self.p3,
         }
     }
 
@@ -194,7 +194,7 @@ impl Curve for Cubic {
 }
 
 #[inline]
-fn flatten_curve<C: Curve>(curve: &C, transform: &Affine, sink: &mut impl FnMut(Point, Point)) {
+fn flatten_curve<C: Curve>(curve: &C, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
     let curve = curve.transform(transform);
 
     let segments = curve.segments_for_tolerance(TOLERANCE).clamp(1, MAX_SEGMENTS);
@@ -212,7 +212,7 @@ fn flatten_curve<C: Curve>(curve: &C, transform: &Affine, sink: &mut impl FnMut(
 }
 
 #[inline]
-pub fn flatten(path: &Path, transform: &Affine, sink: &mut impl FnMut(Point, Point)) {
+pub fn flatten(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
     let mut points = path.points.iter();
 
     let mut first = Point::new(0.0, 0.0);
@@ -294,10 +294,10 @@ struct Stroker<S> {
 
 impl<S: FnMut(Point, Point)> Stroker<S> {
     #[inline]
-    fn new(width: f32, transform: &Affine, sink: S) -> Stroker<S> {
+    fn new(width: f32, transform: Affine, sink: S) -> Stroker<S> {
         Stroker {
             width,
-            transform: *transform,
+            transform: transform,
             first_right: Point::new(0.0, 0.0),
             first_left: Point::new(0.0, 0.0),
             prev_right: Point::new(0.0, 0.0),
@@ -329,7 +329,7 @@ impl<S: FnMut(Point, Point)> Stroker<S> {
             return;
         }
 
-        let curve_transformed = curve.transform(&self.transform);
+        let curve_transformed = curve.transform(self.transform);
 
         let segments = curve_transformed.segments_for_tolerance(TOLERANCE).clamp(1, MAX_SEGMENTS);
         let dt = 1.0 / segments as f32;
@@ -401,7 +401,7 @@ impl<S: FnMut(Point, Point)> Stroker<S> {
 }
 
 #[inline]
-pub fn stroke(path: &Path, width: f32, transform: &Affine, sink: &mut impl FnMut(Point, Point)) {
+pub fn stroke(path: &Path, width: f32, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
     let mut stroker = Stroker::new(width, transform, sink);
 
     let mut points = path.points.iter();

@@ -72,7 +72,7 @@ impl<'a> Canvas<'a> {
         self.renderer.segments.clear();
     }
 
-    pub fn fill_path(&mut self, path: &Path, transform: &Affine, color: Color) {
+    pub fn fill_path(&mut self, path: &Path, transform: Affine, color: Color) {
         if path.is_empty() {
             return;
         }
@@ -80,7 +80,7 @@ impl<'a> Canvas<'a> {
         let mut min = Point::new(self.width as f32, self.height as f32);
         let mut max = Point::new(0.0, 0.0);
         for &point in &path.points {
-            let transformed = *transform * point;
+            let transformed = transform * point;
             min = min.min(transformed);
             max = max.max(transformed);
         }
@@ -111,7 +111,7 @@ impl<'a> Canvas<'a> {
         self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);
     }
 
-    pub fn stroke_path(&mut self, path: &Path, width: f32, transform: &Affine, color: Color) {
+    pub fn stroke_path(&mut self, path: &Path, width: f32, transform: Affine, color: Color) {
         if path.is_empty() {
             return;
         }
@@ -122,7 +122,7 @@ impl<'a> Canvas<'a> {
         let mut min = Point::new(self.width as f32, self.height as f32);
         let mut max = Point::new(0.0, 0.0);
         for &point in &path.points {
-            let transformed = *transform * point;
+            let transformed = transform * point;
 
             let dilate0 = transformed - dilate_x - dilate_y;
             let dilate1 = transformed + dilate_x - dilate_y;
@@ -164,7 +164,7 @@ impl<'a> Canvas<'a> {
         glyphs: &[Glyph],
         font: &Font,
         size: f32,
-        transform: &Affine,
+        transform: Affine,
         color: Color,
     ) {
         use rustybuzz::ttf_parser::{GlyphId, OutlineBuilder};
@@ -212,9 +212,9 @@ impl<'a> Canvas<'a> {
             };
             font.face.outline_glyph(GlyphId(glyph.id), &mut builder);
 
-            let transform = *transform * Affine::translate(glyph.x, glyph.y) * Affine::scale(scale);
+            let transform = transform * Affine::translate(glyph.x, glyph.y) * Affine::scale(scale);
 
-            self.fill_path(&builder.path, &transform, color);
+            self.fill_path(&builder.path, transform, color);
         }
     }
 
@@ -223,7 +223,7 @@ impl<'a> Canvas<'a> {
         text: &str,
         font: &Font,
         size: f32,
-        transform: &Affine,
+        transform: Affine,
         color: Color,
     ) {
         let layout = TextLayout::new(text, font, size);

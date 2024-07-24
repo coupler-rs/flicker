@@ -87,7 +87,7 @@ impl State {
                 let time = std::time::Instant::now();
                 svg::render(
                     &self.commands,
-                    &(Affine::scale(scale as f32) * self.transform),
+                    Affine::scale(scale as f32) * self.transform,
                     &mut canvas,
                 );
                 let elapsed = time.elapsed();
@@ -98,7 +98,7 @@ impl State {
                     &format!("{:#.3?}", self.timer.average()),
                     &self.font,
                     24.0,
-                    &Affine::scale(scale as f32),
+                    Affine::scale(scale as f32),
                     Color::rgba(0, 0, 0, 255),
                 );
 

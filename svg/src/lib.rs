@@ -93,7 +93,7 @@ fn build_list(node: &usvg::Node, commands: &mut Vec<Command>) {
     }
 }
 
-pub fn render(commands: &[Command], transform: &Affine, canvas: &mut Canvas) {
+pub fn render(commands: &[Command], transform: Affine, canvas: &mut Canvas) {
     for command in commands {
         match command.style {
             Style::Fill => {
