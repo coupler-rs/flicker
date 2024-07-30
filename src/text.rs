@@ -7,6 +7,7 @@ pub struct Font {
 }
 
 impl Font {
+    #[inline]
     pub fn from_bytes(data: &'static [u8], index: usize) -> Option<Font> {
         let face = Face::from_slice(data, index as u32)?;
 
@@ -23,14 +24,22 @@ pub struct Glyph {
 
 #[derive(Clone)]
 pub struct TextLayout {
+    width: f32,
+    height: f32,
     glyphs: Vec<Glyph>,
 }
 
 impl TextLayout {
+    #[inline]
     pub fn empty() -> TextLayout {
-        TextLayout { glyphs: Vec::new() }
+        TextLayout {
+            width: 0.0,
+            height: 0.0,
+            glyphs: Vec::new(),
+        }
     }
 
+    #[inline]
     pub fn new(text: &str, font: &Font, size: f32) -> TextLayout {
         let mut buf = UnicodeBuffer::new();
         buf.push_str(text);
@@ -50,9 +59,24 @@ impl TextLayout {
             offset += scale * glyph_pos.x_advance as f32;
         }
 
-        TextLayout { glyphs }
+        TextLayout {
+            width: offset,
+            height: (font.face.ascender() - font.face.descender()) as f32,
+            glyphs,
+        }
     }
 
+    #[inline]
+    pub fn width(&self) -> f32 {
+        self.width
+    }
+
+    #[inline]
+    pub fn height(&self) -> f32 {
+        self.height
+    }
+
+    #[inline]
     pub fn glyphs(&self) -> &[Glyph] {
         &self.glyphs
     }
