@@ -2,6 +2,7 @@ use std::iter::zip;
 
 use rustybuzz::{Face, UnicodeBuffer};
 
+#[derive(Clone)]
 pub struct Font {
     pub(crate) face: Face<'static>,
 }
