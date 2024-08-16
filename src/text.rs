@@ -60,9 +60,11 @@ impl TextLayout {
             offset += scale * glyph_pos.x_advance as f32;
         }
 
+        let height = scale * (font.face.ascender() - font.face.descender()) as f32;
+
         TextLayout {
             width: offset,
-            height: (font.face.ascender() - font.face.descender()) as f32,
+            height,
             glyphs,
         }
     }
