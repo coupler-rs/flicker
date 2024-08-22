@@ -138,19 +138,15 @@ impl<'a> Canvas<'a> {
 
         let dilate_x = transform.linear() * width * Point::new(0.5, 0.0);
         let dilate_y = transform.linear() * width * Point::new(0.0, 0.5);
+        let dilate_min = dilate_x.min(dilate_y);
+        let dilate_max = dilate_x.max(dilate_y);
 
         let mut min = Point::new(self.width as f32, self.height as f32);
         let mut max = Point::new(0.0, 0.0);
         for &point in &path.points {
             let transformed = transform * point;
-
-            let dilate0 = transformed - dilate_x - dilate_y;
-            let dilate1 = transformed + dilate_x - dilate_y;
-            let dilate2 = transformed - dilate_x + dilate_y;
-            let dilate3 = transformed + dilate_x + dilate_y;
-
-            min = min.min(dilate0).min(dilate1).min(dilate2).min(dilate3);
-            max = max.max(dilate0).max(dilate1).max(dilate2).max(dilate3);
+            min = min.min(transformed + dilate_min);
+            max = max.max(transformed + dilate_max);
         }
 
         let min_x = (min.x as isize).max(0).min(self.width as isize) as usize;
