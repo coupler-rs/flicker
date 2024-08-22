@@ -14,7 +14,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("tiger", |b| {
         b.iter(|| {
-            svg::render(&commands, &Affine::scale(2.0), &mut canvas);
+            svg::render(&commands, Affine::scale(2.0), &mut canvas);
         })
     });
 }
