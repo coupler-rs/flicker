@@ -12,7 +12,9 @@ trait Curve {
     fn eval(&self, t: f32) -> Point;
 
     fn tangent(&self, t: f32) -> Point;
+    #[allow(unused)]
     fn start_tangent(&self) -> Point;
+    #[allow(unused)]
     fn end_tangent(&self) -> Point;
 
     fn segments_for_tolerance(&self, tolerance: f32) -> usize;

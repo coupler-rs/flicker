@@ -46,6 +46,7 @@ where
 
     fn last(&self) -> Self::Elem;
     fn as_slice(&self) -> &[Self::Elem];
+    #[allow(unused)]
     fn as_mut_slice(&mut self) -> &mut [Self::Elem];
     fn load(slice: &[Self::Elem]) -> Self;
     fn store(&self, slice: &mut [Self::Elem]);
@@ -66,6 +67,7 @@ where
     fn prefix_sum(self) -> Self;
 }
 
+#[allow(unused)]
 pub trait Int: Sized
 where
     Self: Shl<usize, Output = Self>,
