@@ -11,7 +11,7 @@ impl Point {
     /// Constructs a 2-dimensional point.
     #[inline]
     pub fn new(x: f32, y: f32) -> Point {
-        Point { x: x, y: y }
+        Point { x, y }
     }
 
     /// Computes the dot product between two points (treated as vectors).

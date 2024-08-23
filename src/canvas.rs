@@ -38,6 +38,12 @@ impl Renderer {
     }
 }
 
+impl Default for Renderer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Canvas<'a> {
     renderer: &'a mut Renderer,
     data: &'a mut [u32],
@@ -119,7 +125,7 @@ impl<'a> Canvas<'a> {
 
         self.renderer.rasterizer.set_size(path_width, path_height);
 
-        flatten(&path, transform, &mut |p1, p2| {
+        flatten(path, transform, &mut |p1, p2| {
             self.add_segment(p1 - offset, p2 - offset);
         });
 
@@ -165,7 +171,7 @@ impl<'a> Canvas<'a> {
 
         self.renderer.rasterizer.set_size(path_width, path_height);
 
-        stroke(&path, width, transform, &mut |p1, p2| {
+        stroke(path, width, transform, &mut |p1, p2| {
             self.add_segment(p1 - offset, p2 - offset);
         });
 

@@ -153,6 +153,7 @@ impl Rasterizer {
 
     pub fn add_segments(&mut self, segments: &[Segment]) {
         for segment in segments {
+            #[allow(clippy::collapsible_else_if)]
             if segment.p1.x < segment.p2.x {
                 if segment.p1.y < segment.p2.y {
                     self.add_segment::<PosXPosY>(segment.p1, segment.p2);
@@ -528,12 +529,7 @@ struct Pixels<A: Arch> {
 
 impl<A: Arch> Clone for Pixels<A> {
     fn clone(&self) -> Self {
-        Pixels {
-            a: self.a,
-            r: self.r,
-            g: self.g,
-            b: self.b,
-        }
+        *self
     }
 }
 

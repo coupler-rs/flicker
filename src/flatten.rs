@@ -297,7 +297,7 @@ impl<S: FnMut(Point, Point)> Stroker<S> {
     fn new(width: f32, transform: Affine, sink: S) -> Stroker<S> {
         Stroker {
             width,
-            transform: transform,
+            transform,
             first_right: Point::new(0.0, 0.0),
             first_left: Point::new(0.0, 0.0),
             prev_right: Point::new(0.0, 0.0),

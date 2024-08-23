@@ -1,6 +1,7 @@
 #[derive(Copy, Clone)]
 pub struct Color(u32);
 
+#[allow(clippy::identity_op)]
 impl Color {
     #[inline]
     pub fn rgba(r: u8, g: u8, b: u8, a: u8) -> Color {

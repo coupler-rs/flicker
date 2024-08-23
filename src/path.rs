@@ -138,3 +138,9 @@ impl Path {
         }
     }
 }
+
+impl Default for Path {
+    fn default() -> Self {
+        Self::new()
+    }
+}
