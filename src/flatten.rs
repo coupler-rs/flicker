@@ -407,12 +407,15 @@ pub fn stroke(path: &Path, width: f32, transform: Affine, sink: &mut impl FnMut(
     let mut stroker = Stroker::new(width, transform, sink);
 
     let mut points = path.points.iter();
+    let mut first = Point::new(0.0, 0.0);
     let mut prev = Point::new(0.0, 0.0);
     for verb in &path.verbs {
         match *verb {
             Verb::Move => {
                 stroker.finish();
-                prev = *points.next().unwrap();
+
+                first = *points.next().unwrap();
+                prev = first;
             }
             Verb::Line => {
                 let p1 = *points.next().unwrap();
@@ -438,6 +441,14 @@ pub fn stroke(path: &Path, width: f32, transform: Affine, sink: &mut impl FnMut(
                 prev = p3;
             }
             Verb::Close => {
+                if prev != first {
+                    stroker.stroke_curve(&Line {
+                        p0: prev,
+                        p1: first,
+                    });
+                }
+                prev = first;
+
                 stroker.close();
             }
         }
