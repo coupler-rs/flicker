@@ -136,6 +136,18 @@ impl ops::MulAssign<f32> for Point {
     }
 }
 
+impl ops::Neg for Point {
+    type Output = Point;
+
+    #[inline]
+    fn neg(self) -> Point {
+        Point {
+            x: -self.x,
+            y: -self.y,
+        }
+    }
+}
+
 /// A 2-dimensional affine transformation.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Affine([f32; 6]);
