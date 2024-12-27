@@ -144,8 +144,8 @@ impl<'a> Canvas<'a> {
 
         let dilate_x = transform.linear() * width * Point::new(0.5, 0.0);
         let dilate_y = transform.linear() * width * Point::new(0.0, 0.5);
-        let dilate_min = dilate_x.min(dilate_y);
-        let dilate_max = dilate_x.max(dilate_y);
+        let dilate_min = dilate_x.min(dilate_y).min(-dilate_x).min(-dilate_y);
+        let dilate_max = dilate_x.max(dilate_y).max(-dilate_x).max(-dilate_y);
 
         let mut min = Point::new(self.width as f32, self.height as f32);
         let mut max = Point::new(0.0, 0.0);
