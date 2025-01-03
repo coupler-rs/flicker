@@ -1,4 +1,4 @@
-mod canvas;
+mod render;
 mod color;
 mod flatten;
 mod geom;
@@ -7,7 +7,7 @@ mod raster;
 mod simd;
 mod text;
 
-pub use canvas::*;
+pub use render::*;
 pub use color::*;
 pub use geom::*;
 pub use path::Path;
