@@ -78,21 +78,21 @@ impl State {
 
                 self.framebuffer.resize(width as usize * height as usize, 0xFF000000);
 
-                let mut canvas = self.renderer.canvas(&mut self.framebuffer, width, height);
+                let mut target = self.renderer.attach(&mut self.framebuffer, width, height);
 
-                canvas.clear(Color::rgba(255, 255, 255, 255));
+                target.clear(Color::rgba(255, 255, 255, 255));
 
                 let time = std::time::Instant::now();
                 svg::render(
                     &self.commands,
                     Affine::scale(scale as f32) * self.transform,
-                    &mut canvas,
+                    &mut target,
                 );
                 let elapsed = time.elapsed();
 
                 self.timer.update(elapsed);
 
-                canvas.fill_text(
+                target.fill_text(
                     &format!("{:#.3?}", self.timer.average()),
                     &self.font,
                     24.0,

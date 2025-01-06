@@ -20,15 +20,15 @@ impl Renderer {
         }
     }
 
-    pub fn canvas<'a>(
+    pub fn attach<'a>(
         &'a mut self,
         data: &'a mut [u32],
         width: usize,
         height: usize,
-    ) -> Canvas<'a> {
+    ) -> RenderTarget<'a> {
         assert!(data.len() == width * height);
 
-        Canvas {
+        RenderTarget {
             renderer: self,
             data,
             width,
@@ -44,7 +44,7 @@ impl Default for Renderer {
     }
 }
 
-pub struct Canvas<'a> {
+pub struct RenderTarget<'a> {
     renderer: &'a mut Renderer,
     data: &'a mut [u32],
     width: usize,
@@ -52,7 +52,7 @@ pub struct Canvas<'a> {
     transform: Affine,
 }
 
-impl<'a> Canvas<'a> {
+impl<'a> RenderTarget<'a> {
     pub fn width(&self) -> usize {
         self.width
     }
@@ -63,7 +63,7 @@ impl<'a> Canvas<'a> {
 
     pub fn with_transform<F, R>(&mut self, transform: Affine, f: F) -> R
     where
-        F: FnOnce(&mut Canvas) -> R,
+        F: FnOnce(&mut RenderTarget) -> R,
     {
         let saved = self.transform;
         self.transform = saved * transform;
