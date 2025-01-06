@@ -1,9 +1,7 @@
 use std::time::Duration;
 
 use flicker::{Affine, Color, Font, Point, Renderer};
-use portlight::{
-    App, Bitmap, Event, MouseButton, Response, Size, WindowContext, WindowOptions,
-};
+use portlight::{App, Bitmap, Event, MouseButton, Response, Size, WindowContext, WindowOptions};
 
 const WIDTH: usize = 512;
 const HEIGHT: usize = 512;
