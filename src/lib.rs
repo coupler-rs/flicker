@@ -1,3 +1,4 @@
+mod bbox;
 mod color;
 mod flatten;
 mod geom;

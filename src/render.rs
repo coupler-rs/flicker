@@ -1,3 +1,4 @@
+use crate::bbox::{self, Bbox};
 use crate::color::Color;
 use crate::flatten;
 use crate::geom::{Affine, Point};
@@ -95,89 +96,62 @@ impl<'a> RenderTarget<'a> {
     }
 
     pub fn fill_path(&mut self, path: &Path, transform: Affine, color: Color) {
-        if path.is_empty() {
-            return;
-        }
-
         let transform = self.transform * transform;
 
-        let mut min = Point::new(self.width as f32, self.height as f32);
-        let mut max = Point::new(0.0, 0.0);
-        for &point in &path.points {
-            let transformed = transform * point;
-            min = min.min(transformed);
-            max = max.max(transformed);
-        }
+        let clip = Bbox {
+            x0: 0,
+            y0: 0,
+            x1: self.width as i32,
+            y1: self.height as i32,
+        };
+        let bbox = bbox::fill(path, transform, clip);
 
-        let min_x = (min.x as isize).max(0).min(self.width as isize) as usize;
-        let min_y = (min.y as isize).max(0).min(self.height as isize) as usize;
-        let max_x = ((max.x + 1.0) as isize).max(0).min(self.width as isize) as usize;
-        let max_y = ((max.y + 1.0) as isize).max(0).min(self.height as isize) as usize;
-
-        if max_x <= min_x || max_y <= min_y {
+        if bbox.is_empty() {
             return;
         }
 
-        let path_width = max_x - min_x;
-        let path_height = max_y - min_y;
-
-        let offset = Point::new(min_x as f32, min_y as f32);
-
+        let path_width = (bbox.x1 - bbox.x0) as usize;
+        let path_height = (bbox.y1 - bbox.y0) as usize;
         self.renderer.rasterizer.set_size(path_width, path_height);
 
+        let offset = Point::new(bbox.x0 as f32, bbox.y0 as f32);
         flatten::fill(path, transform, &mut |p1, p2| {
             self.add_segment(p1 - offset, p2 - offset);
         });
 
         self.drain_segments();
 
-        let data_start = min_y * self.width + min_x;
+        let data_start = bbox.y0 as usize * self.width + bbox.x0 as usize;
         self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);
     }
 
     pub fn stroke_path(&mut self, path: &Path, width: f32, transform: Affine, color: Color) {
-        if path.is_empty() {
-            return;
-        }
-
         let transform = self.transform * transform;
 
-        let dilate_x = transform.linear() * width * Point::new(0.5, 0.0);
-        let dilate_y = transform.linear() * width * Point::new(0.0, 0.5);
-        let dilate_min = dilate_x.min(dilate_y).min(-dilate_x).min(-dilate_y);
-        let dilate_max = dilate_x.max(dilate_y).max(-dilate_x).max(-dilate_y);
+        let clip = Bbox {
+            x0: 0,
+            y0: 0,
+            x1: self.width as i32,
+            y1: self.height as i32,
+        };
+        let bbox = bbox::stroke(path, width, transform, clip);
 
-        let mut min = Point::new(self.width as f32, self.height as f32);
-        let mut max = Point::new(0.0, 0.0);
-        for &point in &path.points {
-            let transformed = transform * point;
-            min = min.min(transformed + dilate_min);
-            max = max.max(transformed + dilate_max);
-        }
-
-        let min_x = (min.x as isize).max(0).min(self.width as isize) as usize;
-        let min_y = (min.y as isize).max(0).min(self.height as isize) as usize;
-        let max_x = ((max.x + 1.0) as isize).max(0).min(self.width as isize) as usize;
-        let max_y = ((max.y + 1.0) as isize).max(0).min(self.height as isize) as usize;
-
-        if max_x <= min_x || max_y <= min_y {
+        if bbox.is_empty() {
             return;
         }
 
-        let path_width = max_x - min_x;
-        let path_height = max_y - min_y;
-
-        let offset = Point::new(min_x as f32, min_y as f32);
-
+        let path_width = (bbox.x1 - bbox.x0) as usize;
+        let path_height = (bbox.y1 - bbox.y0) as usize;
         self.renderer.rasterizer.set_size(path_width, path_height);
 
+        let offset = Point::new(bbox.x0 as f32, bbox.y0 as f32);
         flatten::stroke(path, width, transform, &mut |p1, p2| {
             self.add_segment(p1 - offset, p2 - offset);
         });
 
         self.drain_segments();
 
-        let data_start = min_y * self.width + min_x;
+        let data_start = bbox.y0 as usize * self.width + bbox.x0 as usize;
         self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);
     }
 
