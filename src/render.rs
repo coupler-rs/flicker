@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::flatten::{flatten, stroke};
+use crate::flatten;
 use crate::geom::{Affine, Point};
 use crate::path::Path;
 use crate::raster::{Rasterizer, Segment};
@@ -125,7 +125,7 @@ impl<'a> RenderTarget<'a> {
 
         self.renderer.rasterizer.set_size(path_width, path_height);
 
-        flatten(path, transform, &mut |p1, p2| {
+        flatten::fill(path, transform, &mut |p1, p2| {
             self.add_segment(p1 - offset, p2 - offset);
         });
 
@@ -171,7 +171,7 @@ impl<'a> RenderTarget<'a> {
 
         self.renderer.rasterizer.set_size(path_width, path_height);
 
-        stroke(path, width, transform, &mut |p1, p2| {
+        flatten::stroke(path, width, transform, &mut |p1, p2| {
             self.add_segment(p1 - offset, p2 - offset);
         });
 

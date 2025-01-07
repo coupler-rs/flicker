@@ -196,7 +196,7 @@ impl Curve for Cubic {
 }
 
 #[inline]
-fn flatten_curve<C: Curve>(curve: &C, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
+fn fill_curve<C: Curve>(curve: &C, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
     let curve = curve.transform(transform);
 
     let segments = curve.segments_for_tolerance(TOLERANCE).clamp(1, MAX_SEGMENTS);
@@ -214,7 +214,7 @@ fn flatten_curve<C: Curve>(curve: &C, transform: Affine, sink: &mut impl FnMut(P
 }
 
 #[inline]
-pub fn flatten(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
+pub fn fill(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
     let mut points = path.points.iter();
 
     let mut first = Point::new(0.0, 0.0);
@@ -232,7 +232,7 @@ pub fn flatten(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Poin
                 };
                 prev = line.end();
 
-                flatten_curve(&line, transform, sink);
+                fill_curve(&line, transform, sink);
             }
             Verb::Quadratic => {
                 let quadratic = Quadratic {
@@ -242,7 +242,7 @@ pub fn flatten(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Poin
                 };
                 prev = quadratic.end();
 
-                flatten_curve(&quadratic, transform, sink);
+                fill_curve(&quadratic, transform, sink);
             }
             Verb::Cubic => {
                 let cubic = Cubic {
@@ -253,11 +253,11 @@ pub fn flatten(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Poin
                 };
                 prev = cubic.end();
 
-                flatten_curve(&cubic, transform, sink);
+                fill_curve(&cubic, transform, sink);
             }
             Verb::Close => {
                 if prev != first {
-                    flatten_curve(
+                    fill_curve(
                         &Line {
                             p0: prev,
                             p1: first,
@@ -272,7 +272,7 @@ pub fn flatten(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Poin
     }
 
     if prev != first {
-        flatten_curve(
+        fill_curve(
             &Line {
                 p0: prev,
                 p1: first,
