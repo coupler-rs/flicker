@@ -1,22 +1,20 @@
 use crate::bbox::{self, Bbox};
 use crate::color::Color;
-use crate::flatten;
+use crate::flatten::{self, Line};
 use crate::geom::{Affine, Point};
 use crate::path::Path;
-use crate::raster::{Rasterizer, Segment};
+use crate::raster::Rasterizer;
 use crate::text::{Font, Glyph, TextLayout};
 
-const MAX_SEGMENTS: usize = 256;
-
 pub struct Renderer {
-    segments: Vec<Segment>,
+    lines: Vec<Line>,
     rasterizer: Rasterizer,
 }
 
 impl Renderer {
     pub fn new() -> Renderer {
         Renderer {
-            segments: Vec::with_capacity(MAX_SEGMENTS),
+            lines: Vec::new(),
             rasterizer: Rasterizer::new(),
         }
     }
@@ -82,19 +80,6 @@ impl<'a> RenderTarget<'a> {
         }
     }
 
-    fn add_segment(&mut self, p1: Point, p2: Point) {
-        self.renderer.segments.push(Segment { p1, p2 });
-
-        if self.renderer.segments.len() == self.renderer.segments.capacity() {
-            self.drain_segments();
-        }
-    }
-
-    fn drain_segments(&mut self) {
-        self.renderer.rasterizer.add_segments(&self.renderer.segments);
-        self.renderer.segments.clear();
-    }
-
     pub fn fill_path(&mut self, path: &Path, transform: Affine, color: Color) {
         let transform = self.transform * transform;
 
@@ -114,12 +99,11 @@ impl<'a> RenderTarget<'a> {
         let path_height = (bbox.y1 - bbox.y0) as usize;
         self.renderer.rasterizer.set_size(path_width, path_height);
 
-        let offset = Point::new(bbox.x0 as f32, bbox.y0 as f32);
-        flatten::fill(path, transform, &mut |p1, p2| {
-            self.add_segment(p1 - offset, p2 - offset);
-        });
+        let offset = Affine::translate(-bbox.x0 as f32, -bbox.y0 as f32);
+        flatten::fill(path, offset * transform, &mut self.renderer.lines);
 
-        self.drain_segments();
+        self.renderer.rasterizer.rasterize(&self.renderer.lines);
+        self.renderer.lines.clear();
 
         let data_start = bbox.y0 as usize * self.width + bbox.x0 as usize;
         self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);
@@ -144,12 +128,11 @@ impl<'a> RenderTarget<'a> {
         let path_height = (bbox.y1 - bbox.y0) as usize;
         self.renderer.rasterizer.set_size(path_width, path_height);
 
-        let offset = Point::new(bbox.x0 as f32, bbox.y0 as f32);
-        flatten::stroke(path, width, transform, &mut |p1, p2| {
-            self.add_segment(p1 - offset, p2 - offset);
-        });
+        let offset = Affine::translate(-bbox.x0 as f32, -bbox.y0 as f32);
+        flatten::stroke(path, width, offset * transform, &mut self.renderer.lines);
 
-        self.drain_segments();
+        self.renderer.rasterizer.rasterize(&self.renderer.lines);
+        self.renderer.lines.clear();
 
         let data_start = bbox.y0 as usize * self.width + bbox.x0 as usize;
         self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);

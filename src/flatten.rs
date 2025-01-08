@@ -21,9 +21,15 @@ trait Curve {
 }
 
 #[derive(Copy, Clone)]
-struct Line {
-    p0: Point,
-    p1: Point,
+pub struct Line {
+    pub p0: Point,
+    pub p1: Point,
+}
+
+impl Line {
+    pub fn new(p0: Point, p1: Point) -> Line {
+        Line { p0, p1 }
+    }
 }
 
 impl Curve for Line {
@@ -196,7 +202,7 @@ impl Curve for Cubic {
 }
 
 #[inline]
-fn fill_curve<C: Curve>(curve: &C, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
+fn fill_curve<C: Curve>(curve: &C, transform: Affine, lines: &mut Vec<Line>) {
     let curve = curve.transform(transform);
 
     let segments = curve.segments_for_tolerance(TOLERANCE).clamp(1, MAX_SEGMENTS);
@@ -206,7 +212,7 @@ fn fill_curve<C: Curve>(curve: &C, transform: Affine, sink: &mut impl FnMut(Poin
     let mut t = dt;
     for _ in 0..segments {
         let point = curve.eval(t);
-        sink(prev, point);
+        lines.push(Line::new(prev, point));
 
         prev = point;
         t += dt;
@@ -214,7 +220,7 @@ fn fill_curve<C: Curve>(curve: &C, transform: Affine, sink: &mut impl FnMut(Poin
 }
 
 #[inline]
-pub fn fill(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
+pub fn fill(path: &Path, transform: Affine, lines: &mut Vec<Line>) {
     let mut points = path.points.iter();
 
     let mut first = Point::new(0.0, 0.0);
@@ -232,7 +238,7 @@ pub fn fill(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point))
                 };
                 prev = line.end();
 
-                fill_curve(&line, transform, sink);
+                fill_curve(&line, transform, lines);
             }
             Verb::Quadratic => {
                 let quadratic = Quadratic {
@@ -242,7 +248,7 @@ pub fn fill(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point))
                 };
                 prev = quadratic.end();
 
-                fill_curve(&quadratic, transform, sink);
+                fill_curve(&quadratic, transform, lines);
             }
             Verb::Cubic => {
                 let cubic = Cubic {
@@ -253,7 +259,7 @@ pub fn fill(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point))
                 };
                 prev = cubic.end();
 
-                fill_curve(&cubic, transform, sink);
+                fill_curve(&cubic, transform, lines);
             }
             Verb::Close => {
                 if prev != first {
@@ -263,7 +269,7 @@ pub fn fill(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point))
                             p1: first,
                         },
                         transform,
-                        sink,
+                        lines,
                     );
                 }
                 prev = first;
@@ -278,12 +284,12 @@ pub fn fill(path: &Path, transform: Affine, sink: &mut impl FnMut(Point, Point))
                 p1: first,
             },
             transform,
-            sink,
+            lines,
         );
     }
 }
 
-struct Stroker<S> {
+struct Stroker<'a> {
     width: f32,
     transform: Affine,
     first_right: Point,
@@ -291,12 +297,12 @@ struct Stroker<S> {
     prev_right: Point,
     prev_left: Point,
     closed: bool,
-    sink: S,
+    lines: &'a mut Vec<Line>,
 }
 
-impl<S: FnMut(Point, Point)> Stroker<S> {
+impl Stroker<'_> {
     #[inline]
-    fn new(width: f32, transform: Affine, sink: S) -> Stroker<S> {
+    fn new(width: f32, transform: Affine, lines: &mut Vec<Line>) -> Stroker {
         Stroker {
             width,
             transform,
@@ -305,24 +311,24 @@ impl<S: FnMut(Point, Point)> Stroker<S> {
             prev_right: Point::new(0.0, 0.0),
             prev_left: Point::new(0.0, 0.0),
             closed: true,
-            sink,
+            lines,
         }
     }
 
     #[inline]
     fn cap_begin(&mut self) {
-        (self.sink)(self.first_left, self.first_right);
+        self.lines.push(Line::new(self.first_left, self.first_right));
     }
 
     #[inline]
     fn cap_end(&mut self) {
-        (self.sink)(self.prev_right, self.prev_left);
+        self.lines.push(Line::new(self.prev_right, self.prev_left));
     }
 
     #[inline]
     fn join(&mut self, right: Point, left: Point) {
-        (self.sink)(self.prev_right, right);
-        (self.sink)(left, self.prev_left);
+        self.lines.push(Line::new(self.prev_right, right));
+        self.lines.push(Line::new(left, self.prev_left));
     }
 
     #[inline]
@@ -375,8 +381,8 @@ impl<S: FnMut(Point, Point)> Stroker<S> {
             let right = point + offset_transformed;
             let left = point - offset_transformed;
 
-            (self.sink)(self.prev_right, right);
-            (self.sink)(left, self.prev_left);
+            self.lines.push(Line::new(self.prev_right, right));
+            self.lines.push(Line::new(left, self.prev_left));
 
             self.prev_right = right;
             self.prev_left = left;
@@ -403,8 +409,8 @@ impl<S: FnMut(Point, Point)> Stroker<S> {
 }
 
 #[inline]
-pub fn stroke(path: &Path, width: f32, transform: Affine, sink: &mut impl FnMut(Point, Point)) {
-    let mut stroker = Stroker::new(width, transform, sink);
+pub fn stroke(path: &Path, width: f32, transform: Affine, lines: &mut Vec<Line>) {
+    let mut stroker = Stroker::new(width, transform, lines);
 
     let mut points = path.points.iter();
     let mut first = Point::new(0.0, 0.0);

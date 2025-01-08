@@ -1,13 +1,8 @@
 use std::mem;
 
+use crate::flatten::Line;
 use crate::simd::*;
 use crate::{geom::Point, Color};
-
-#[derive(Copy, Clone)]
-pub struct Segment {
-    pub p1: Point,
-    pub p2: Point,
-}
 
 const BITS_PER_BITMASK: usize = u64::BITS as usize;
 const BITS_PER_BITMASK_SHIFT: usize = BITS_PER_BITMASK.trailing_zeros() as usize;
@@ -151,27 +146,27 @@ impl Rasterizer {
         }
     }
 
-    pub fn add_segments(&mut self, segments: &[Segment]) {
-        for segment in segments {
+    pub fn rasterize(&mut self, lines: &[Line]) {
+        for line in lines {
             #[allow(clippy::collapsible_else_if)]
-            if segment.p1.x < segment.p2.x {
-                if segment.p1.y < segment.p2.y {
-                    self.add_segment::<PosXPosY>(segment.p1, segment.p2);
+            if line.p0.x < line.p1.x {
+                if line.p0.y < line.p1.y {
+                    self.rasterize_line::<PosXPosY>(line.p0, line.p1);
                 } else {
-                    self.add_segment::<PosXNegY>(segment.p1, segment.p2);
+                    self.rasterize_line::<PosXNegY>(line.p0, line.p1);
                 }
             } else {
-                if segment.p1.y < segment.p2.y {
-                    self.add_segment::<NegXPosY>(segment.p2, segment.p1);
+                if line.p0.y < line.p1.y {
+                    self.rasterize_line::<NegXPosY>(line.p1, line.p0);
                 } else {
-                    self.add_segment::<NegXNegY>(segment.p2, segment.p1);
+                    self.rasterize_line::<NegXNegY>(line.p1, line.p0);
                 }
             }
         }
     }
 
     #[inline(always)]
-    fn add_segment<Flip: FlipCoords>(&mut self, p1: Point, p2: Point) {
+    fn rasterize_line<Flip: FlipCoords>(&mut self, p1: Point, p2: Point) {
         let p1 = Flip::y_coord(p1, self.height as f32);
         let p2 = Flip::y_coord(p2, self.height as f32);
 
