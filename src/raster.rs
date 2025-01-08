@@ -347,30 +347,30 @@ impl Rasterizer {
         self.bitmasks[offset + bitmask_index_max] |= mask;
     }
 
-    pub fn finish(&mut self, color: Color, data: &mut [u32], stride: usize) {
+    pub fn composite(&mut self, color: Color, data: &mut [u32], stride: usize) {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
             #[cfg(target_feature = "avx2")]
-            return self.finish_inner::<Avx2>(color, data, stride);
+            return self.composite_inner::<Avx2>(color, data, stride);
 
             #[cfg(all(not(target_feature = "avx2"), target_feature = "sse2"))]
-            return self.finish_inner::<Sse2>(color, data, stride);
+            return self.composite_inner::<Sse2>(color, data, stride);
 
             #[cfg(not(any(target_feature = "avx2", target_feature = "sse2")))]
-            return self.finish_inner::<Scalar>(color, data, stride);
+            return self.composite_inner::<Scalar>(color, data, stride);
         }
 
         #[cfg(target_arch = "aarch64")]
         {
             #[cfg(target_feature = "neon")]
-            return self.finish_inner::<Neon>(color, data, stride);
+            return self.composite_inner::<Neon>(color, data, stride);
         }
 
         #[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")))]
-        self.finish_inner::<Scalar>(color, data, stride)
+        self.composite_inner::<Scalar>(color, data, stride)
     }
 
-    fn finish_inner<A: Arch>(&mut self, color: Color, data: &mut [u32], stride: usize) {
+    fn composite_inner<A: Arch>(&mut self, color: Color, data: &mut [u32], stride: usize) {
         let a_unit = A::f32::from(color.a() as f32 * (1.0 / 255.0));
         let src = Pixels {
             a: A::f32::from(color.a() as f32),

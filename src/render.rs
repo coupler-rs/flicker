@@ -110,7 +110,7 @@ impl<'a> RenderTarget<'a> {
         self.lines.clear();
 
         let data_start = bbox.y0 as usize * self.width + bbox.x0 as usize;
-        self.rasterizer.finish(color, &mut self.data[data_start..], self.width);
+        self.rasterizer.composite(color, &mut self.data[data_start..], self.width);
     }
 
     pub fn stroke_path(&mut self, path: &Path, width: f32, transform: Affine, color: Color) {
@@ -139,7 +139,7 @@ impl<'a> RenderTarget<'a> {
         self.lines.clear();
 
         let data_start = bbox.y0 as usize * self.width + bbox.x0 as usize;
-        self.rasterizer.finish(color, &mut self.data[data_start..], self.width);
+        self.rasterizer.composite(color, &mut self.data[data_start..], self.width);
     }
 
     pub fn fill_glyphs(
