@@ -28,11 +28,13 @@ impl Renderer {
         assert!(data.len() == width * height);
 
         RenderTarget {
-            renderer: self,
             data,
             width,
             height,
             transform: Affine::id(),
+
+            lines: &mut self.lines,
+            rasterizer: &mut self.rasterizer,
         }
     }
 }
@@ -44,11 +46,13 @@ impl Default for Renderer {
 }
 
 pub struct RenderTarget<'a> {
-    renderer: &'a mut Renderer,
     data: &'a mut [u32],
     width: usize,
     height: usize,
     transform: Affine,
+
+    lines: &'a mut Vec<Line>,
+    rasterizer: &'a mut Rasterizer,
 }
 
 impl<'a> RenderTarget<'a> {
@@ -97,16 +101,16 @@ impl<'a> RenderTarget<'a> {
 
         let path_width = (bbox.x1 - bbox.x0) as usize;
         let path_height = (bbox.y1 - bbox.y0) as usize;
-        self.renderer.rasterizer.set_size(path_width, path_height);
+        self.rasterizer.set_size(path_width, path_height);
 
         let offset = Affine::translate(-bbox.x0 as f32, -bbox.y0 as f32);
-        flatten::fill(path, offset * transform, &mut self.renderer.lines);
+        flatten::fill(path, offset * transform, &mut self.lines);
 
-        self.renderer.rasterizer.rasterize(&self.renderer.lines);
-        self.renderer.lines.clear();
+        self.rasterizer.rasterize(&self.lines);
+        self.lines.clear();
 
         let data_start = bbox.y0 as usize * self.width + bbox.x0 as usize;
-        self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);
+        self.rasterizer.finish(color, &mut self.data[data_start..], self.width);
     }
 
     pub fn stroke_path(&mut self, path: &Path, width: f32, transform: Affine, color: Color) {
@@ -126,16 +130,16 @@ impl<'a> RenderTarget<'a> {
 
         let path_width = (bbox.x1 - bbox.x0) as usize;
         let path_height = (bbox.y1 - bbox.y0) as usize;
-        self.renderer.rasterizer.set_size(path_width, path_height);
+        self.rasterizer.set_size(path_width, path_height);
 
         let offset = Affine::translate(-bbox.x0 as f32, -bbox.y0 as f32);
-        flatten::stroke(path, width, offset * transform, &mut self.renderer.lines);
+        flatten::stroke(path, width, offset * transform, &mut self.lines);
 
-        self.renderer.rasterizer.rasterize(&self.renderer.lines);
-        self.renderer.lines.clear();
+        self.rasterizer.rasterize(&self.lines);
+        self.lines.clear();
 
         let data_start = bbox.y0 as usize * self.width + bbox.x0 as usize;
-        self.renderer.rasterizer.finish(color, &mut self.data[data_start..], self.width);
+        self.rasterizer.finish(color, &mut self.data[data_start..], self.width);
     }
 
     pub fn fill_glyphs(
