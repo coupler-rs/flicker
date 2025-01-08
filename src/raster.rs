@@ -1,7 +1,7 @@
 use std::mem;
 
 use crate::flatten::Line;
-use crate::simd::*;
+// use crate::simd::*;
 use crate::{geom::Point, Color};
 
 const BITS_PER_BITMASK: usize = u64::BITS as usize;
@@ -348,38 +348,42 @@ impl Rasterizer {
     }
 
     pub fn composite(&mut self, color: Color, data: &mut [u32], stride: usize) {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        {
-            #[cfg(target_feature = "avx2")]
-            return self.composite_inner::<Avx2>(color, data, stride);
+        // #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        // {
+        //     #[cfg(target_feature = "avx2")]
+        //     return self.composite_inner::<Avx2>(color, data, stride);
 
-            #[cfg(all(not(target_feature = "avx2"), target_feature = "sse2"))]
-            return self.composite_inner::<Sse2>(color, data, stride);
+        //     #[cfg(all(not(target_feature = "avx2"), target_feature = "sse2"))]
+        //     return self.composite_inner::<Sse2>(color, data, stride);
 
-            #[cfg(not(any(target_feature = "avx2", target_feature = "sse2")))]
-            return self.composite_inner::<Scalar>(color, data, stride);
-        }
+        //     #[cfg(not(any(target_feature = "avx2", target_feature = "sse2")))]
+        //     return self.composite_inner::<Scalar>(color, data, stride);
+        // }
 
-        #[cfg(target_arch = "aarch64")]
-        {
-            #[cfg(target_feature = "neon")]
-            return self.composite_inner::<Neon>(color, data, stride);
-        }
+        // #[cfg(target_arch = "aarch64")]
+        // {
+        //     #[cfg(target_feature = "neon")]
+        //     return self.composite_inner::<Neon>(color, data, stride);
+        // }
 
-        #[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")))]
+        // #[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")))]
         self.composite_inner::<Scalar>(color, data, stride)
     }
 
-    fn composite_inner<A: Arch>(&mut self, color: Color, data: &mut [u32], stride: usize) {
-        let a_unit = A::f32::from(color.a() as f32 * (1.0 / 255.0));
-        let src = Pixels {
-            a: A::f32::from(color.a() as f32),
-            r: a_unit * A::f32::from(color.r() as f32),
-            g: a_unit * A::f32::from(color.g() as f32),
-            b: a_unit * A::f32::from(color.b() as f32),
-        };
+    fn composite_inner<P: Pipeline>(&mut self, color: Color, data: &mut [u32], stride: usize) {
+        let mut pipeline = P::build(color);
+
+        // let a_unit = A::f32::from(color.a() as f32 * (1.0 / 255.0));
+        // let src = Pixels {
+        //     a: A::f32::from(color.a() as f32),
+        //     r: a_unit * A::f32::from(color.r() as f32),
+        //     g: a_unit * A::f32::from(color.g() as f32),
+        //     b: a_unit * A::f32::from(color.b() as f32),
+        // };
 
         for y in 0..self.height {
+            pipeline.reset();
+
             let mut accum = 0.0;
             let mut coverage = 0.0;
 
@@ -421,25 +425,27 @@ impl Rasterizer {
 
                 // Composite an interior span (or skip an empty span).
                 if next_x > x {
-                    if coverage > 254.5 / 255.0 && color.a() == 255 {
-                        pixels_row[x..next_x].fill(color.into());
-                    } else if coverage > 0.5 / 255.0 {
-                        let mut pixels_chunks =
-                            pixels_row[x..next_x].chunks_exact_mut(A::u32::LANES);
+                    pipeline.fill(&mut pixels_row[x..next_x]);
 
-                        for pixels_slice in &mut pixels_chunks {
-                            let mask = A::f32::from(coverage);
-                            let dst = Pixels::<A>::unpack(A::u32::load(pixels_slice));
-                            dst.blend(src, mask).pack().store(pixels_slice);
-                        }
+                    // if coverage > 254.5 / 255.0 && color.a() == 255 {
+                    //     pixels_row[x..next_x].fill(color.into());
+                    // } else if coverage > 0.5 / 255.0 {
+                    //     let mut pixels_chunks =
+                    //         pixels_row[x..next_x].chunks_exact_mut(A::u32::LANES);
 
-                        let pixels_remainder = pixels_chunks.into_remainder();
-                        if !pixels_remainder.is_empty() {
-                            let mask = A::f32::from(coverage);
-                            let dst = Pixels::unpack(A::u32::load_partial(pixels_remainder));
-                            dst.blend(src, mask).pack().store_partial(pixels_remainder);
-                        }
-                    }
+                    //     for pixels_slice in &mut pixels_chunks {
+                    //         let mask = A::f32::from(coverage);
+                    //         let dst = Pixels::<A>::unpack(A::u32::load(pixels_slice));
+                    //         dst.blend(src, mask).pack().store(pixels_slice);
+                    //     }
+
+                    //     let pixels_remainder = pixels_chunks.into_remainder();
+                    //     if !pixels_remainder.is_empty() {
+                    //         let mask = A::f32::from(coverage);
+                    //         let dst = Pixels::unpack(A::u32::load_partial(pixels_remainder));
+                    //         dst.blend(src, mask).pack().store_partial(pixels_remainder);
+                    //     }
+                    // }
                 }
 
                 x = next_x;
@@ -469,41 +475,43 @@ impl Rasterizer {
 
                 // Composite an edge span.
                 if next_x > x {
-                    let coverage_slice = &mut coverage_row[x..next_x];
-                    let mut coverage_chunks = coverage_slice.chunks_exact_mut(A::f32::LANES);
+                    pipeline.fill_edge(&mut coverage_row[x..next_x], &mut pixels_row[x..next_x]);
 
-                    let pixels_slice = &mut pixels_row[x..next_x];
-                    let mut pixels_chunks = pixels_slice.chunks_exact_mut(A::u32::LANES);
+                    // let coverage_slice = &mut coverage_row[x..next_x];
+                    // let mut coverage_chunks = coverage_slice.chunks_exact_mut(A::f32::LANES);
 
-                    for (coverage_chunk, pixels_chunk) in
-                        (&mut coverage_chunks).zip(&mut pixels_chunks)
-                    {
-                        let deltas = A::f32::load(coverage_chunk);
-                        let accums = A::f32::from(accum) + deltas.prefix_sum();
-                        accum = accums.last();
-                        let mask = accums.abs().min(A::f32::from(1.0));
-                        coverage = mask.last();
+                    // let pixels_slice = &mut pixels_row[x..next_x];
+                    // let mut pixels_chunks = pixels_slice.chunks_exact_mut(A::u32::LANES);
 
-                        coverage_chunk.fill(0.0);
+                    // for (coverage_chunk, pixels_chunk) in
+                    //     (&mut coverage_chunks).zip(&mut pixels_chunks)
+                    // {
+                    //     let deltas = A::f32::load(coverage_chunk);
+                    //     let accums = A::f32::from(accum) + deltas.prefix_sum();
+                    //     accum = accums.last();
+                    //     let mask = accums.abs().min(A::f32::from(1.0));
+                    //     coverage = mask.last();
 
-                        let dst = Pixels::unpack(A::u32::load(pixels_chunk));
-                        dst.blend(src, mask).pack().store(pixels_chunk);
-                    }
+                    //     coverage_chunk.fill(0.0);
 
-                    let coverage_remainder = coverage_chunks.into_remainder();
-                    let pixels_remainder = pixels_chunks.into_remainder();
-                    if !pixels_remainder.is_empty() && !coverage_remainder.is_empty() {
-                        let deltas = A::f32::load_partial(coverage_remainder);
-                        let accums = A::f32::from(accum) + deltas.prefix_sum();
-                        accum = accums.last();
-                        let mask = accums.abs().min(A::f32::from(1.0));
-                        coverage = mask.last();
+                    //     let dst = Pixels::unpack(A::u32::load(pixels_chunk));
+                    //     dst.blend(src, mask).pack().store(pixels_chunk);
+                    // }
 
-                        coverage_remainder.fill(0.0);
+                    // let coverage_remainder = coverage_chunks.into_remainder();
+                    // let pixels_remainder = pixels_chunks.into_remainder();
+                    // if !pixels_remainder.is_empty() && !coverage_remainder.is_empty() {
+                    //     let deltas = A::f32::load_partial(coverage_remainder);
+                    //     let accums = A::f32::from(accum) + deltas.prefix_sum();
+                    //     accum = accums.last();
+                    //     let mask = accums.abs().min(A::f32::from(1.0));
+                    //     coverage = mask.last();
 
-                        let dst = Pixels::unpack(A::u32::load_partial(pixels_remainder));
-                        dst.blend(src, mask).pack().store_partial(pixels_remainder);
-                    }
+                    //     coverage_remainder.fill(0.0);
+
+                    //     let dst = Pixels::unpack(A::u32::load_partial(pixels_remainder));
+                    //     dst.blend(src, mask).pack().store_partial(pixels_remainder);
+                    // }
                 }
 
                 x = next_x;
@@ -515,50 +523,128 @@ impl Rasterizer {
     }
 }
 
-struct Pixels<A: Arch> {
-    a: A::f32,
-    r: A::f32,
-    g: A::f32,
-    b: A::f32,
+trait Pipeline {
+    fn build(color: Color) -> Self;
+    fn reset(&mut self);
+    fn fill(&mut self, dst: &mut [u32]);
+    fn fill_edge(&mut self, cvg: &mut [f32], dst: &mut [u32]);
 }
 
-impl<A: Arch> Clone for Pixels<A> {
-    fn clone(&self) -> Self {
-        *self
-    }
+struct Scalar {
+    color: Color,
+    a: f32,
+    r: f32,
+    g: f32,
+    b: f32,
+    accum: f32,
+    cvg: f32,
 }
 
-impl<A: Arch> Copy for Pixels<A> {}
+impl Pipeline for Scalar {
+    fn build(color: Color) -> Self {
+        let a_unit = color.a() as f32 * (1.0 / 255.0);
 
-impl<A: Arch> Pixels<A> {
-    #[inline]
-    fn unpack(data: A::u32) -> Self {
-        Pixels {
-            a: A::f32::from((data >> 24) & A::u32::from(0xFF)),
-            r: A::f32::from((data >> 16) & A::u32::from(0xFF)),
-            g: A::f32::from((data >> 8) & A::u32::from(0xFF)),
-            b: A::f32::from((data >> 0) & A::u32::from(0xFF)),
+        Scalar {
+            color,
+            a: color.a() as f32,
+            r: a_unit * color.r() as f32,
+            g: a_unit * color.g() as f32,
+            b: a_unit * color.b() as f32,
+            accum: 0.0,
+            cvg: 0.0,
         }
     }
 
-    #[inline]
-    fn pack(self) -> A::u32 {
-        let a = A::u32::from(self.a);
-        let r = A::u32::from(self.r);
-        let g = A::u32::from(self.g);
-        let b = A::u32::from(self.b);
-
-        (a << 24) | (r << 16) | (g << 8) | (b << 0)
+    fn reset(&mut self) {
+        self.accum = 0.0;
+        self.cvg = 0.0;
     }
 
-    #[inline]
-    fn blend(self, src: Self, mask: A::f32) -> Self {
-        let inv_a = A::f32::from(1.0) - mask * A::f32::from(1.0 / 255.0) * src.a;
-        Pixels {
-            a: mask * src.a + inv_a * self.a,
-            r: mask * src.r + inv_a * self.r,
-            g: mask * src.g + inv_a * self.g,
-            b: mask * src.b + inv_a * self.b,
+    fn fill(&mut self, dst: &mut [u32]) {
+        if self.cvg > 254.5 / 255.0 && self.color.a() == 255 {
+            dst.fill(self.color.into());
+        } else if self.cvg > 0.5 / 255.0 {
+            for pixel in dst {
+                let a_dst = ((*pixel >> 24) & 0xFF) as f32;
+                let r_dst = ((*pixel >> 16) & 0xFF) as f32;
+                let g_dst = ((*pixel >> 8) & 0xFF) as f32;
+                let b_dst = ((*pixel >> 0) & 0xFF) as f32;
+
+                let inv_a = 1.0 - self.cvg * (1.0 / 255.0) * self.a;
+                let a = (self.cvg * self.a + inv_a * a_dst) as u32;
+                let r = (self.cvg * self.r + inv_a * r_dst) as u32;
+                let g = (self.cvg * self.g + inv_a * g_dst) as u32;
+                let b = (self.cvg * self.b + inv_a * b_dst) as u32;
+                *pixel = (a << 24) | (r << 16) | (g << 8) | (b << 0);
+            }
+        }
+    }
+
+    fn fill_edge(&mut self, cvg: &mut [f32], dst: &mut [u32]) {
+        for (delta, pixel) in std::iter::zip(cvg, dst) {
+            self.accum += *delta;
+            self.cvg = self.accum.abs().min(1.0);
+            *delta = 0.0;
+
+            let a_dst = ((*pixel >> 24) & 0xFF) as f32;
+            let r_dst = ((*pixel >> 16) & 0xFF) as f32;
+            let g_dst = ((*pixel >> 8) & 0xFF) as f32;
+            let b_dst = ((*pixel >> 0) & 0xFF) as f32;
+
+            let inv_a = 1.0 - self.cvg * (1.0 / 255.0) * self.a;
+            let a = (self.cvg * self.a + inv_a * a_dst) as u32;
+            let r = (self.cvg * self.r + inv_a * r_dst) as u32;
+            let g = (self.cvg * self.g + inv_a * g_dst) as u32;
+            let b = (self.cvg * self.b + inv_a * b_dst) as u32;
+            *pixel = (a << 24) | (r << 16) | (g << 8) | (b << 0);
         }
     }
 }
+
+// struct Pixels<A: Arch> {
+//     a: A::f32,
+//     r: A::f32,
+//     g: A::f32,
+//     b: A::f32,
+// }
+
+// impl<A: Arch> Clone for Pixels<A> {
+//     fn clone(&self) -> Self {
+//         *self
+//     }
+// }
+
+// impl<A: Arch> Copy for Pixels<A> {}
+
+// impl<A: Arch> Pixels<A> {
+//     #[inline]
+//     fn unpack(data: A::u32) -> Self {
+//         Pixels {
+//             a: A::f32::from((data >> 24) & A::u32::from(0xFF)),
+//             r: A::f32::from((data >> 16) & A::u32::from(0xFF)),
+//             g: A::f32::from((data >> 8) & A::u32::from(0xFF)),
+//             b: A::f32::from((data >> 0) & A::u32::from(0xFF)),
+//         }
+//     }
+
+//     #[inline]
+//     fn pack(self) -> A::u32 {
+//         let a = A::u32::from(self.a);
+//         let r = A::u32::from(self.r);
+//         let g = A::u32::from(self.g);
+//         let b = A::u32::from(self.b);
+
+//         (a << 24) | (r << 16) | (g << 8) | (b << 0)
+//     }
+
+//     #[inline]
+//     fn blend(self, src: Self, mask: A::f32) -> Self {
+//         let inv_a = A::f32::from(1.0) - mask * A::f32::from(1.0 / 255.0) * src.a;
+//         Pixels {
+//             a: mask * src.a + inv_a * self.a,
+//             r: mask * src.r + inv_a * self.r,
+//             g: mask * src.g + inv_a * self.g,
+//             b: mask * src.b + inv_a * self.b,
+//         }
+//     }
+// }
