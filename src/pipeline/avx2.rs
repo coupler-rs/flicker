@@ -20,18 +20,14 @@ impl Avx2 {
     #[inline(always)]
     fn accum(&mut self, deltas: __m256) -> __m256 {
         unsafe {
-            // First, perform two separate prefix sums in the upper and lower 4 lanes:
             let shifted = _mm256_castsi256_ps(_mm256_slli_si256(_mm256_castps_si256(deltas), 4));
             let sum1 = _mm256_add_ps(deltas, shifted);
             let shifted = _mm256_castsi256_ps(_mm256_slli_si256(_mm256_castps_si256(sum1), 8));
             let sum2 = _mm256_add_ps(sum1, shifted);
-
-            // Then, carry the total from the lower 4 lanes to the upper 4 lanes:
             let lower = _mm256_castps256_ps128(sum2);
             let total = _mm_shuffle_ps(lower, lower, 0xFF);
             let carry = _mm256_insertf128_ps(_mm256_setzero_ps(), total, 1);
             let sum3 = _mm256_add_ps(sum2, carry);
-
             let sum = _mm256_add_ps(_mm256_set1_ps(self.accum), sum3);
 
             let abs = _mm256_and_ps(sum, _mm256_castsi256_ps(_mm256_set1_epi32(!(1 << 31))));
@@ -92,10 +88,8 @@ impl Pipeline for Avx2 {
 
     #[inline(always)]
     fn reset(&mut self) {
-        unsafe {
-            self.accum = 0.0;
-            self.cvg = 0.0;
-        }
+        self.accum = 0.0;
+        self.cvg = 0.0;
     }
 
     #[inline(always)]
@@ -117,20 +111,23 @@ impl Pipeline for Avx2 {
 
                 if dst_rem.len() >= 4 {
                     let mask = _mm256_set1_ps(self.cvg);
-                    let dst = _mm256_castsi128_si256(_mm_loadu_si128(dst_rem.as_ptr() as *const __m128i));
+                    let dst128 = _mm_loadu_si128(dst_rem.as_ptr() as *const __m128i);
+                    let dst = _mm256_castsi128_si256(dst128);
                     let out = self.blend(dst, mask);
-                    _mm_storeu_si128(dst_rem.as_mut_ptr() as *mut __m128i, _mm256_castsi256_si128(out));
+                    let out128 = _mm256_castsi256_si128(out);
+                    _mm_storeu_si128(dst_rem.as_mut_ptr() as *mut __m128i, out128);
 
                     dst_rem = &mut dst_rem[4..];
                 }
 
                 for pixel in dst_rem {
                     let mask = _mm256_set1_ps(self.cvg);
-                    let dst = _mm256_castsi128_si256(_mm_loadu_si32(pixel as *const u32 as *const u8));
+                    let dst128 = _mm_loadu_si32(pixel as *const u32 as *const u8);
+                    let dst = _mm256_castsi128_si256(dst128);
                     let out = self.blend(dst, mask);
-                    _mm_storeu_si32(pixel as *mut u32 as *mut u8, _mm256_castsi256_si128(out));
+                    let out128 = _mm256_castsi256_si128(out);
+                    _mm_storeu_si32(pixel as *mut u32 as *mut u8, out128);
                 }
-
             }
         }
     }
@@ -161,9 +158,11 @@ impl Pipeline for Avx2 {
                 let mask = self.accum(deltas);
                 _mm_storeu_ps(cvg_rem.as_mut_ptr(), _mm_setzero_ps());
 
-                let dst = _mm256_castsi128_si256(_mm_loadu_si128(dst_rem.as_ptr() as *const __m128i));
+                let dst128 = _mm_loadu_si128(dst_rem.as_ptr() as *const __m128i);
+                let dst = _mm256_castsi128_si256(dst128);
                 let out = self.blend(dst, mask);
-                _mm_storeu_si128(dst_rem.as_mut_ptr() as *mut __m128i, _mm256_castsi256_si128(out));
+                let out128 = _mm256_castsi256_si128(out);
+                _mm_storeu_si128(dst_rem.as_mut_ptr() as *mut __m128i, out128);
             }
 
             dst_rem = &mut dst_rem[4..];
@@ -176,9 +175,11 @@ impl Pipeline for Avx2 {
                 let mask = self.accum(deltas);
                 _mm_store_ss(delta, _mm_set_ss(0.0));
 
-                let dst = _mm256_castsi128_si256(_mm_loadu_si32(pixel as *const u32 as *const u8));
+                let dst128 = _mm_loadu_si32(pixel as *const u32 as *const u8);
+                let dst = _mm256_castsi128_si256(dst128);
                 let out = self.blend(dst, mask);
-                _mm_storeu_si32(pixel as *mut u32 as *mut u8, _mm256_castsi256_si128(out));
+                let out128 = _mm256_castsi256_si128(out);
+                _mm_storeu_si32(pixel as *mut u32 as *mut u8, out128);
             }
         }
     }
