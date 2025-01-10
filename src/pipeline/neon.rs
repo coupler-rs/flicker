@@ -72,10 +72,8 @@ impl Pipeline for Neon {
 
     #[inline(always)]
     fn reset(&mut self) {
-        unsafe {
-            self.accum = 0.0;
-            self.cvg = 0.0;
-        }
+        self.accum = 0.0;
+        self.cvg = 0.0;
     }
 
     #[inline(always)]

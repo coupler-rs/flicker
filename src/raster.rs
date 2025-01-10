@@ -387,9 +387,6 @@ impl Rasterizer {
         for y in 0..self.height {
             pipeline.reset();
 
-            let mut accum = 0.0;
-            let mut coverage = 0.0;
-
             let coverage_start = y * self.width;
             let coverage_end = coverage_start + self.width;
             let coverage_row = &mut self.coverage[coverage_start..coverage_end];
