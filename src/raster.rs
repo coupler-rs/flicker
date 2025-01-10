@@ -1,19 +1,8 @@
 use std::mem;
 
 use crate::flatten::Line;
-use crate::pipeline::{Pipeline, Scalar};
+use crate::pipeline::{self, Pipeline};
 use crate::{geom::Point, Color};
-
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(target_feature = "sse2")]
-use crate::pipeline::Sse2;
-
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(target_feature = "avx2")]
-use crate::pipeline::Avx2;
-
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-use crate::pipeline::Neon;
 
 const BITS_PER_BITMASK: usize = u64::BITS as usize;
 const BITS_PER_BITMASK_SHIFT: usize = BITS_PER_BITMASK.trailing_zeros() as usize;
@@ -362,23 +351,23 @@ impl Rasterizer {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
             #[cfg(target_feature = "avx2")]
-            return self.composite_inner::<Avx2>(color, data, stride);
+            return self.composite_inner::<pipeline::Avx2>(color, data, stride);
 
             #[cfg(all(not(target_feature = "avx2"), target_feature = "sse2"))]
-            return self.composite_inner::<Sse2>(color, data, stride);
+            return self.composite_inner::<pipeline::Sse2>(color, data, stride);
 
             #[cfg(not(any(target_feature = "avx2", target_feature = "sse2")))]
-            return self.composite_inner::<Scalar>(color, data, stride);
+            return self.composite_inner::<pipeline::Scalar>(color, data, stride);
         }
 
         #[cfg(target_arch = "aarch64")]
         {
             #[cfg(target_feature = "neon")]
-            return self.composite_inner::<Neon>(color, data, stride);
+            return self.composite_inner::<pipeline::Neon>(color, data, stride);
         }
 
         #[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")))]
-        self.composite_inner::<Scalar>(color, data, stride)
+        self.composite_inner::<pipeline::Scalar>(color, data, stride)
     }
 
     fn composite_inner<P: Pipeline>(&mut self, color: Color, data: &mut [u32], stride: usize) {

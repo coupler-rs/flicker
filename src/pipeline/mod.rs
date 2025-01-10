@@ -1,6 +1,7 @@
 use crate::Color;
 
 mod scalar;
+#[allow(unused)]
 pub use scalar::Scalar;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -17,9 +18,11 @@ mod avx2;
 #[cfg(target_feature = "avx2")]
 pub use avx2::Avx2;
 
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[cfg(target_arch = "aarch64")]
+#[cfg(target_feature = "neon")]
 mod neon;
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[cfg(target_arch = "aarch64")]
+#[cfg(target_feature = "neon")]
 pub use neon::Neon;
 
 pub trait Pipeline {
