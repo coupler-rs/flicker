@@ -57,13 +57,15 @@ impl Neon {
 impl Pipeline for Neon {
     #[inline(always)]
     fn build(color: Color) -> Self {
+        let a_unit = color.a() as f32 * (1.0 / 255.0);
+
         unsafe {
             Neon {
                 color,
                 a: vdupq_n_f32(color.a() as f32),
-                r: vdupq_n_f32(color.r() as f32),
-                g: vdupq_n_f32(color.g() as f32),
-                b: vdupq_n_f32(color.b() as f32),
+                r: vdupq_n_f32(a_unit * color.r() as f32),
+                g: vdupq_n_f32(a_unit * color.g() as f32),
+                b: vdupq_n_f32(a_unit * color.b() as f32),
                 accum: 0.0,
                 cvg: 0.0,
             }
