@@ -8,6 +8,10 @@ use crate::{geom::Point, Color};
 #[cfg(target_feature = "sse2")]
 use crate::pipeline::Sse2;
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(target_feature = "avx2")]
+use crate::pipeline::Avx2;
+
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use crate::pipeline::Neon;
 
@@ -357,8 +361,8 @@ impl Rasterizer {
     pub fn composite(&mut self, color: Color, data: &mut [u32], stride: usize) {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
-            //     #[cfg(target_feature = "avx2")]
-            //     return self.composite_inner::<Avx2>(color, data, stride);
+            #[cfg(target_feature = "avx2")]
+            return self.composite_inner::<Avx2>(color, data, stride);
 
             #[cfg(all(not(target_feature = "avx2"), target_feature = "sse2"))]
             return self.composite_inner::<Sse2>(color, data, stride);

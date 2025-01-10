@@ -10,6 +10,13 @@ mod sse2;
 #[cfg(target_feature = "sse2")]
 pub use sse2::Sse2;
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(target_feature = "avx2")]
+mod avx2;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(target_feature = "avx2")]
+pub use avx2::Avx2;
+
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 mod neon;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
