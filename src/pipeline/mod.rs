@@ -22,9 +22,6 @@ mod neon;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 pub use neon::Neon;
 
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-pub use neon::Neon;
-
 pub trait Pipeline {
     fn build(color: Color) -> Self;
     fn reset(&mut self);
