@@ -6,7 +6,6 @@ mod path;
 mod pipeline;
 mod raster;
 mod render;
-mod simd;
 mod text;
 
 pub use color::*;
