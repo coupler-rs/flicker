@@ -3,6 +3,7 @@ mod color;
 mod flatten;
 mod geom;
 mod path;
+mod pipeline;
 mod raster;
 mod render;
 mod simd;
