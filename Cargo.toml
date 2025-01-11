@@ -11,7 +11,7 @@ rustybuzz = "0.11.0"
 [dev-dependencies]
 svg = { path = "svg" }
 criterion = { version = "0.3", features = ["html_reports"] }
-portlight = { git = "https://github.com/coupler-rs/portlight", rev = "abd457c4c2b961b1eed19ef6107e4b503659dcd4" }
+portlight = { git = "https://github.com/coupler-rs/portlight", rev = "fff171e9f3f70a9604102e1e1877ad67d0c2badd" }
 
 [[bench]]
 name = "tiger"
